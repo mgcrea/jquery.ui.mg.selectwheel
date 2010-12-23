@@ -24,30 +24,30 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 		debug: true
 	},
 	_mouseStart: function(e) {
-		//if(this.options.debug) console.log("$.ui." + self.widgetName + " ~ +'_mouseStart', e);
+		//console.log("$.ui." + self.widgetName + " ~ +'_mouseStart', e);
 	},
 	_mouseDrag: function(e) {
-		//if(this.options.debug) console.log("$.ui." + self.widgetName + " ~ +'_mouseDrag', e);
+		//console.log("$.ui." + self.widgetName + " ~ +'_mouseDrag', e);
 		this.scrollTo(this._mouseCaptureEvent.currentSlot, this._mouseCaptureEvent.slotYPos + (e.pageY - this._mouseDownEvent.pageY));
 	},
 	_mouseStop: function(e) {
 		var self = this,
 			o = this.options;
 
-		if(o.debug) console.log('$.ui.' + self.widgetName + ' ~ ' + '_mouseStop', e);
+		console.log('$.ui.' + self.widgetName + ' ~ ' + '_mouseStop', e);
 
 		var i = this._mouseCaptureEvent.currentSlot;
 		this._mouseCaptureEvent.stopped = true;
 
 		//this._mouseCaptureEvent.slotYPos = t his.slots[this._mouseCaptureEvent.currentSlot].list.css('top').replace(/px/g, '') * 1;
-		if(o.debug) console.log('$.ui.' + self.widgetName + ' ~ ' + this.slots[i].slotYPos, [this.slots[i].middleOffset, this.slots[i].listLiHeight * this.getCurrentOption(i)]);
+		console.log('$.ui.' + self.widgetName + ' ~ ' + this.slots[i].slotYPos, [this.slots[i].middleOffset, this.slots[i].listLiHeight * this.getCurrentOption(i)]);
 		this.scrollTo(this._mouseCaptureEvent.currentSlot, this.slots[i].middleOffset - (this.slots[i].listLiHeight * this.getCurrentOption(i)));
 	},
 	_mouseCapture: function(e) {
 		var self = this,
 			o = this.options;
 
-		if(o.debug) console.log('$.ui.' + self.widgetName + ' ~ ' + '_mouseCapture', e);
+		console.log('$.ui.' + self.widgetName + ' ~ ' + '_mouseCapture', e);
 
 		// find current slot
 		self.getCurrentSlot(e);
@@ -62,10 +62,11 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 	},
 	_mouseClick: function(e) {
 		var self = $.data(this, "selectwheel"),
-			$t = $(e.target),
-			o = self.options;
+			$t = $(e.target);
 
-		if(o.debug) console.log('$.ui.' + self.widgetName + ' ~ ' + '_mouseClick', e);
+		console.log(self);
+
+		console.log('$.ui.' + self.widgetName + ' ~ ' + '_mouseClick', e);
 
 		if(!self._mouseCaptureEvent.stopped) {
 			self.scrollTo(self._mouseCaptureEvent.currentSlot,
@@ -90,7 +91,7 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 	},
 
 	scrollTo: function (slot, destY, tempo) {
-		//if(o.debug) console.log("$.ui." + self.widgetName + " ~ +'scrollTo', [slot, destY, tempo]);
+		//console.log("$.ui." + self.widgetName + " ~ +'scrollTo', [slot, destY, tempo]);
 		this.setPosition(slot, destY ? destY : 0, tempo);
 
 		// If we are outside of the boundaries go back to the sheepfold
@@ -99,7 +100,7 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 		}*/
 	},
 	setPosition: function (slot, destY, tempo) {
-		//if(o.debug) console.log("$.ui." + self.widgetName + " ~ +'setPosition', [slot, destY, tempo]);
+		//console.log("$.ui." + self.widgetName + " ~ +'setPosition', [slot, destY, tempo]);
 
 		//transition 1 ~ pur wT
 		//if(tempo) this.slots[slot].list.css('-webkit-transition-duration', tempo);
@@ -116,20 +117,20 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 
 		// deprecated
 		//this.slots[slot].list.slotYPosition = destY;
-		//this.slots[slot].list.bind('webkitTransitionEnd', function(e) { if(o.debug) console.log("$.ui." + self.widgetName + " ~ +'!!!'); });
+		//this.slots[slot].list.bind('webkitTransitionEnd', function(e) { console.log("$.ui." + self.widgetName + " ~ +'!!!'); });
 	},
 
 
 	_create: function() {
 		console.log('$.ui.' + this.widgetName + ' ~ ' + '_create()', [this.options]);
-		this._wheelify( true );
+		this._selectwheel( true );
 	},
 
-	_wheelify: function( init ) {
+	_selectwheel: function( init ) {
 		var self = this,
 			o = this.options;
 
-		if(o.debug) {
+		if (o.debug) {
 			o.startTime = new Date().getTime();
 		} else {
 			logger.disableLogger();
@@ -190,7 +191,7 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 
 		});
 
-		if(o.debug) console.log('$.ui.' + self.widgetName + ' ~ this.slots', this.slots);
+		console.log('$.ui.' + self.widgetName + ' ~ this.slots', this.slots);
 
 		// insert new wrapper
 		this.wrapper.appendTo(this.element);
@@ -204,21 +205,22 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 			self.slots[i].listOffset = $(this).offset();
 			self.slots[i].slotYPos = 0;
 
-			if(o.debug) console.log('$.ui.' + self.widgetName + ' ~ slot[' + i + ']', self.slots[i]);
+			console.log('$.ui.' + self.widgetName + ' ~ slot[' + i + ']', self.slots[i]);
 
 			self.setPosition(i, self.slots[i].middleOffset - (self.slots[i].listLiHeight * self.slots[i].selectedLi));
 		});
 
 		// mouse click
-		this.element.bind('click.'+this.widgetName, {'this' : this}, this._mouseClick);
+		this.element.bind('click.'+this.widgetName, this._mouseClick);
 
 		// mouse init
 		this._mouseInit();
 
 		if(o.debug) {
 			o.elapsedTime = new Date().getTime() - o.startTime;
-			console.log('$.ui.' + this.widgetName + ' ~ ' + '_createEnd() took ' + o.elapsedTime + 'ms');
 		}
+
+		console.log('$.ui.' + this.widgetName + ' ~ ' + '_createEnd() took ' + o.elapsedTime + 'ms');
 
 		return true;
 	},
