@@ -21,27 +21,33 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 		transferClasses: true,
 		distance: 5, // $.ui.mouse option
 		delay: 5, // $.ui.mouse option
+		debug: true
 	},
 	_mouseStart: function(e) {
-		//$.log('_mouseStart', e);
+		//if(this.options.debug) console.log("$.ui." + self.widgetName + " ~ +'_mouseStart', e);
 	},
 	_mouseDrag: function(e) {
-		//$.log('_mouseDrag', e);
+		//if(this.options.debug) console.log("$.ui." + self.widgetName + " ~ +'_mouseDrag', e);
 		this.scrollTo(this._mouseCaptureEvent.currentSlot, this._mouseCaptureEvent.slotYPos + (e.pageY - this._mouseDownEvent.pageY));
 	},
 	_mouseStop: function(e) {
-		$.log('_mouseStop', e);
+		var self = this,
+			o = this.options;
+
+		if(o.debug) console.log('$.ui.' + self.widgetName + ' ~ ' + '_mouseStop', e);
+
 		var i = this._mouseCaptureEvent.currentSlot;
 		this._mouseCaptureEvent.stopped = true;
 
-		//this._mouseCaptureEvent.slotYPos = this.slots[this._mouseCaptureEvent.currentSlot].list.css('top').replace(/px/g, '') * 1;
-		$.log(this.slots[i].slotYPos, [this.slots[i].middleOffset, this.slots[i].listLiHeight * this.getCurrentOption(i)]);
+		//this._mouseCaptureEvent.slotYPos = t his.slots[this._mouseCaptureEvent.currentSlot].list.css('top').replace(/px/g, '') * 1;
+		if(o.debug) console.log('$.ui.' + self.widgetName + ' ~ ' + this.slots[i].slotYPos, [this.slots[i].middleOffset, this.slots[i].listLiHeight * this.getCurrentOption(i)]);
 		this.scrollTo(this._mouseCaptureEvent.currentSlot, this.slots[i].middleOffset - (this.slots[i].listLiHeight * this.getCurrentOption(i)));
 	},
 	_mouseCapture: function(e) {
-		$.log('_mouseCapture', e);
 		var self = this,
 			o = this.options;
+
+		if(o.debug) console.log('$.ui.' + self.widgetName + ' ~ ' + '_mouseCapture', e);
 
 		// find current slot
 		self.getCurrentSlot(e);
@@ -55,9 +61,11 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 		return true;
 	},
 	_mouseClick: function(e) {
-		$.log('_mouseClick', e);
 		var self = $.data(this, "selectwheel"),
-			$t = $(e.target);
+			$t = $(e.target),
+			o = self.options;
+
+		if(o.debug) console.log('$.ui.' + self.widgetName + ' ~ ' + '_mouseClick', e);
 
 		if(!self._mouseCaptureEvent.stopped) {
 			self.scrollTo(self._mouseCaptureEvent.currentSlot,
@@ -82,7 +90,7 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 	},
 
 	scrollTo: function (slot, destY, tempo) {
-		//$.log('scrollTo', [slot, destY, tempo]);
+		//if(o.debug) console.log("$.ui." + self.widgetName + " ~ +'scrollTo', [slot, destY, tempo]);
 		this.setPosition(slot, destY ? destY : 0, tempo);
 
 		// If we are outside of the boundaries go back to the sheepfold
@@ -91,7 +99,7 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 		}*/
 	},
 	setPosition: function (slot, destY, tempo) {
-		//$.log('setPosition', [slot, destY, tempo]);
+		//if(o.debug) console.log("$.ui." + self.widgetName + " ~ +'setPosition', [slot, destY, tempo]);
 
 		//transition 1 ~ pur wT
 		//if(tempo) this.slots[slot].list.css('-webkit-transition-duration', tempo);
@@ -108,11 +116,12 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 
 		// deprecated
 		//this.slots[slot].list.slotYPosition = destY;
-		//this.slots[slot].list.bind('webkitTransitionEnd', function(e) { $.log('!!!'); });
+		//this.slots[slot].list.bind('webkitTransitionEnd', function(e) { if(o.debug) console.log("$.ui." + self.widgetName + " ~ +'!!!'); });
 	},
 
 
 	_create: function() {
+		console.log('$.ui.' + this.widgetName + ' ~ ' + '_create()', [this.options]);
 		this._wheelify( true );
 	},
 
@@ -120,18 +129,26 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 		var self = this,
 			o = this.options;
 
+		if(o.debug) {
+			o.startTime = new Date().getTime();
+		} else {
+			logger.disableLogger();
+		}
+
 		this.originalElement = this.element;
 
 		if(this.element.get(0).tagName.toLowerCase() === 'select') {
 			this.element = this.element.wrap($('<div>')).parent('div');
 		}
 
+		this.element = this.element.append($('<div>')).children('div:last');
+
 		this.widgetId = self.widgetBaseClass + '-' +  Math.random().toString(16).slice(2, 10);
 		this.element.attr('id', this.widgetId).addClass(self.widgetBaseClass + ' ui-widget ui-state-default');
 		this.wrapper = $('<div>').addClass(self.widgetBaseClass + '-wrapper');
 		this.frame = $('<div>').addClass(self.widgetBaseClass + '-frame');
 
-		this.selects = this.element.find("select");
+		this.selects = this.originalElement.find("select").hide();
 		this.slots = {};
 
 		$.each(this.selects, function(i) {
@@ -173,11 +190,7 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 
 		});
 
-
-		$.log(this.slots);
-
-		// hide selects
-		this.element.children().hide();
+		if(o.debug) console.log('$.ui.' + self.widgetName + ' ~ this.slots', this.slots);
 
 		// insert new wrapper
 		this.wrapper.appendTo(this.element);
@@ -191,7 +204,7 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 			self.slots[i].listOffset = $(this).offset();
 			self.slots[i].slotYPos = 0;
 
-			$.log(self.slots[i]);
+			if(o.debug) console.log('$.ui.' + self.widgetName + ' ~ slot[' + i + ']', self.slots[i]);
 
 			self.setPosition(i, self.slots[i].middleOffset - (self.slots[i].listLiHeight * self.slots[i].selectedLi));
 		});
@@ -201,6 +214,11 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 
 		// mouse init
 		this._mouseInit();
+
+		if(o.debug) {
+			o.elapsedTime = new Date().getTime() - o.startTime;
+			console.log('$.ui.' + this.widgetName + ' ~ ' + '_createEnd() took ' + o.elapsedTime + 'ms');
+		}
 
 		return true;
 	},
@@ -220,35 +238,32 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 
 });
 
-$.log = function(msg, object) {
-	try {
-		console.log('a');
-		//console.log(arguments.callee.caller);
-		if(typeof(object) == 'undefined') console.log("%s: %o", "debug", msg);
-		else console.log("$.ui.selectwheel ~ " + "%s: %o", msg, object);
-		return true;
-	} catch(e) {
-		return false;
-	}
-}
-
-function log(msg, object) {
-	try {
-		console.log('b');
-		//console.log(arguments.callee.caller);
-		if(typeof(object) == 'undefined') console.log("%s: %o", "debug", msg);
-		else console.log("$.ui.selectwheel ~ " + "%s: %o", msg, object);
-		return true;
-	} catch(e) {
-		return false;
-	}
-}
-
 function splitCssMatrix(m, r) {
 	var re = new RegExp('matrix\\(' + '([-+]?\\d+)' + '*.?,*.?' + '([-+]?\\d+)' + '*.?,*.?' + '([-+]?\\d+)' + '*.?,*.?' + '([-+]?\\d+)' + '*.?,*.?' + '([-+]?\\d+)' + '*.?,*.?' + '([-+]?\\d+)' + '*.?,*.?', ["i"]);
 	var rs = re.exec(m);
 	if(typeof r !== undefined) return rs[r];
 	return rs;
 }
+
+/*
+ * logger wrapper
+ */
+
+var logger = function() {
+	var oldConsoleLog = null;
+	var pub = {};
+
+	pub.enableLogger = function enableLogger() {
+		if(oldConsoleLog == null) return;
+		window['console']['log'] = oldConsoleLog;
+	};
+
+	pub.disableLogger = function disableLogger() {
+		oldConsoleLog = console.log;
+		window['console']['log'] = function() {};
+	};
+
+	return pub;
+}();
 
 })(jQuery);
