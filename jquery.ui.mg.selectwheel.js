@@ -18,36 +18,39 @@
 $.widget("ui.selectwheel", $.ui.mouse, {
 	widgetEventPrefix: "selectwheel",
 	options: {
+		active: 'ui-state-active',
 		transferClasses: true,
 		distance: 5, // $.ui.mouse option
 		delay: 5, // $.ui.mouse option
 		debug: true
 	},
 	_mouseStart: function(e) {
-		//console.log("$.ui." + self.widgetName + " ~ +'_mouseStart', e);
+		//console.log('_mouseStart', e);
 	},
 	_mouseDrag: function(e) {
-		//console.log("$.ui." + self.widgetName + " ~ +'_mouseDrag', e);
+		//console.log('_mouseDrag', e);
 		this.scrollTo(this._mouseCaptureEvent.currentSlot, this._mouseCaptureEvent.slotYPos + (e.pageY - this._mouseDownEvent.pageY));
 	},
 	_mouseStop: function(e) {
-		var self = this,
+		console.log('$.ui.' + this.widgetName + ' ~ ' + '_mouseStop()', e);
+		var i = this._mouseCaptureEvent.currentSlot // currentSlot
+			j = this.getCurrentOption(i), // currentOption
 			o = this.options;
-
-		console.log('$.ui.' + self.widgetName + ' ~ ' + '_mouseStop', e);
-
-		var i = this._mouseCaptureEvent.currentSlot;
 		this._mouseCaptureEvent.stopped = true;
 
-		//this._mouseCaptureEvent.slotYPos = t his.slots[this._mouseCaptureEvent.currentSlot].list.css('top').replace(/px/g, '') * 1;
-		console.log('$.ui.' + self.widgetName + ' ~ ' + this.slots[i].slotYPos, [this.slots[i].middleOffset, this.slots[i].listLiHeight * this.getCurrentOption(i)]);
-		this.scrollTo(this._mouseCaptureEvent.currentSlot, this.slots[i].middleOffset - (this.slots[i].listLiHeight * this.getCurrentOption(i)));
+		//this._mouseCaptureEvent.slotYPos = this.slots[this._mouseCaptureEvent.currentSlot].list.css('top').replace(/px/g, '') * 1;
+		console.log('$.ui.' + this.widgetName + ' ~ ' + this.slots[i].slotYPos, [this.slots[i].middleOffset, this.slots[i].listLiHeight * j]);
+		this.scrollTo(i, this.slots[i].middleOffset - (this.slots[i].listLiHeight * j));
+
+		// toggle active class on selected li
+		this.slots[i].list.children("li").removeClass(o.active).filter(":eq("+j+")").addClass(o.active);
+		// toggle input select
+		this.slots[i].select.val(j);
 	},
 	_mouseCapture: function(e) {
+		console.log('$.ui.' + this.widgetName + ' ~ ' + '_mouseCapture', e);
 		var self = this,
 			o = this.options;
-
-		console.log('$.ui.' + self.widgetName + ' ~ ' + '_mouseCapture', e);
 
 		// find current slot
 		self.getCurrentSlot(e);
@@ -61,12 +64,9 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 		return true;
 	},
 	_mouseClick: function(e) {
-		var self = $.data(this, "selectwheel"),
-			$t = $(e.target);
-
-		console.log(self);
-
+		var self = $.data(this, "selectwheel");
 		console.log('$.ui.' + self.widgetName + ' ~ ' + '_mouseClick', e);
+		var $t = $(e.target);
 
 		if(!self._mouseCaptureEvent.stopped) {
 			self.scrollTo(self._mouseCaptureEvent.currentSlot,
@@ -91,7 +91,7 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 	},
 
 	scrollTo: function (slot, destY, tempo) {
-		//console.log("$.ui." + self.widgetName + " ~ +'scrollTo', [slot, destY, tempo]);
+		//console.log('scrollTo', [slot, destY, tempo]);
 		this.setPosition(slot, destY ? destY : 0, tempo);
 
 		// If we are outside of the boundaries go back to the sheepfold
@@ -100,7 +100,7 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 		}*/
 	},
 	setPosition: function (slot, destY, tempo) {
-		//console.log("$.ui." + self.widgetName + " ~ +'setPosition', [slot, destY, tempo]);
+		//console.log('setPosition', [slot, destY, tempo]);
 
 		//transition 1 ~ pur wT
 		//if(tempo) this.slots[slot].list.css('-webkit-transition-duration', tempo);
@@ -117,7 +117,7 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 
 		// deprecated
 		//this.slots[slot].list.slotYPosition = destY;
-		//this.slots[slot].list.bind('webkitTransitionEnd', function(e) { console.log("$.ui." + self.widgetName + " ~ +'!!!'); });
+		//this.slots[slot].list.bind('webkitTransitionEnd', function(e) { console.log('!!!'); });
 	},
 
 
@@ -130,9 +130,7 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 		var self = this,
 			o = this.options;
 
-		if (o.debug) {
-			o.startTime = new Date().getTime();
-		} else {
+		if (!o.debug) {
 			logger.disableLogger();
 		}
 
@@ -142,9 +140,8 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 			this.element = this.element.wrap($('<div>')).parent('div');
 		}
 
-		this.element = this.element.append($('<div>')).children('div:last');
-
 		this.widgetId = self.widgetBaseClass + '-' +  Math.random().toString(16).slice(2, 10);
+		this.element = this.element.append($('<div>')).children('div:last');
 		this.element.attr('id', this.widgetId).addClass(self.widgetBaseClass + ' ui-widget ui-state-default');
 		this.wrapper = $('<div>').addClass(self.widgetBaseClass + '-wrapper');
 		this.frame = $('<div>').addClass(self.widgetBaseClass + '-frame');
@@ -191,7 +188,11 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 
 		});
 
-		console.log('$.ui.' + self.widgetName + ' ~ this.slots', this.slots);
+
+		console.log(this.slots);
+
+		// hide selects
+		//this.element.children().hide();
 
 		// insert new wrapper
 		this.wrapper.appendTo(this.element);
@@ -205,22 +206,16 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 			self.slots[i].listOffset = $(this).offset();
 			self.slots[i].slotYPos = 0;
 
-			console.log('$.ui.' + self.widgetName + ' ~ slot[' + i + ']', self.slots[i]);
+			console.log(self.slots[i]);
 
 			self.setPosition(i, self.slots[i].middleOffset - (self.slots[i].listLiHeight * self.slots[i].selectedLi));
 		});
 
 		// mouse click
-		this.element.bind('click.'+this.widgetName, this._mouseClick);
+		this.element.data("selectwheel", this).bind('click.'+this.widgetName, this._mouseClick);
 
 		// mouse init
 		this._mouseInit();
-
-		if(o.debug) {
-			o.elapsedTime = new Date().getTime() - o.startTime;
-		}
-
-		console.log('$.ui.' + this.widgetName + ' ~ ' + '_createEnd() took ' + o.elapsedTime + 'ms');
 
 		return true;
 	},
@@ -240,6 +235,8 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 
 });
 
+window.console.log2 = window.console.log;
+
 function splitCssMatrix(m, r) {
 	var re = new RegExp('matrix\\(' + '([-+]?\\d+)' + '*.?,*.?' + '([-+]?\\d+)' + '*.?,*.?' + '([-+]?\\d+)' + '*.?,*.?' + '([-+]?\\d+)' + '*.?,*.?' + '([-+]?\\d+)' + '*.?,*.?' + '([-+]?\\d+)' + '*.?,*.?', ["i"]);
 	var rs = re.exec(m);
@@ -250,6 +247,12 @@ function splitCssMatrix(m, r) {
 /*
  * logger wrapper
  */
+
+var oldConsoleLog = window.console.log;
+
+$.enableLog = function(widget) {
+	$.log = oldConsoleLog;
+}
 
 var logger = function() {
 	var oldConsoleLog = null;
