@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset='utf-8' />
+	<title>jquery.ui.mg.keyboard ~ 01-BASIC</title>
+	<link rel="stylesheet" type="text/css" media="screen" href="css/01-basic.less.css" />
+	<script type="text/javascript" src="../vendors/jquery/jquery.js"></script>
+	<script type="text/javascript" src="../vendors/jquery.ui/jquery.ui.core.js"></script>
+	<script type="text/javascript" src="../vendors/jquery.ui/jquery.ui.widget.js"></script>
+	<script type="text/javascript" src="../vendors/jquery.ui/jquery.ui.position.js"></script>
+	<script type="text/javascript" src="../vendors/jquery.ui/jquery.ui.mouse.js"></script>
+	<script type="text/javascript" src="../jquery.ui.mg.selectwheel.js"></script>
+	<script type="text/javascript" src="js/01-basic.js"></script>
+</head>
+<body>
+
+<h2>wheelify a select</h2>
+
+<div class="ui-trigger-selectwheel">
+	<div class="input select">
+		<label for="country">Departure</label>
+		<div class="wrap">
+			<select size="1" id="departure" name="departureCountry">
+				<option value="AF">Afghanistan</option>
+				<option value="AL">Albania</option>
+				<option value="DZ">Algeria</option>
+				<option value="AS">American Samoa</option>
+				<option value="AD">Andorra</option>
+				<option value="AO">Angola</option>
+				<option value="AI">Anguilla</option>
+				<option value="AQ">Antarctica</option>
+				<option value="AG">Antigua and Barbuda</option>
+				<option value="AR">Argentina</option>
+				<option value="AM">Armenia</option>
+				<option value="AW">Aruba</option>
+				<option value="AU">Australia</option>
+				<option value="AT">Austria</option>
+				<option value="AZ">Azerbaidjan</option>
+				<option value="BS">Bahamas</option>
+				<option value="BH">Bahrain</option>
+				<option value="BD">Bangladesh</option>
+				<option value="BB">Barbados</option>
+				<option value="BY">Belarus</option>
+				<option value="BE">Belgium</option>
+				<option value="BZ">Belize</option>
+				<option value="BJ">Benin</option>
+				<option value="BM">Bermuda</option>
+				<option value="BT">Bhutan</option>
+				<option value="BO">Bolivia</option>
+				<option value="BA">Bosnia-Herzegovina</option>
+				<option value="BW">Botswana</option>
+				<option value="BV">Bouvet Island</option>
+				<option value="BR">Brazil</option>
+			</select>
+		</div>
+	</div>
+	<div class="input select">
+		<label for="country">Arrival</label>
+		<div class="wrap">
+			<select size="1" id="arrival" name="arrivalCountry">
+				<option value="AF">Afghanistan</option>
+				<option value="AL">Albania</option>
+				<option value="DZ">Algeria</option>
+				<option value="AS">American Samoa</option>
+				<option value="AD">Andorra</option>
+				<option value="AO">Angola</option>
+				<option value="AI">Anguilla</option>
+				<option value="AQ">Antarctica</option>
+				<option value="AG">Antigua and Barbuda</option>
+				<option value="AR">Argentina</option>
+				<option value="AM">Armenia</option>
+				<option value="AW">Aruba</option>
+				<option value="AU">Australia</option>
+				<option value="AT">Austria</option>
+				<option value="AZ">Azerbaidjan</option>
+				<option value="BS">Bahamas</option>
+				<option value="BH">Bahrain</option>
+				<option value="BD">Bangladesh</option>
+				<option value="BB">Barbados</option>
+				<option value="BY">Belarus</option>
+				<option value="BE">Belgium</option>
+				<option value="BZ">Belize</option>
+				<option value="BJ">Benin</option>
+				<option value="BM">Bermuda</option>
+				<option value="BT">Bhutan</option>
+				<option value="BO">Bolivia</option>
+				<option value="BA">Bosnia-Herzegovina</option>
+				<option value="BW">Botswana</option>
+				<option value="BV">Bouvet Island</option>
+				<option value="BR">Brazil</option>
+			</select>
+		</div>
+	</div>
+</div>
+
+<h2>wheelify a list</h2>
+
+<div class="ui-trigger-selectwheel">
+	<ul size="1" id="departure" name="departureCountry">
+		<li data-value="AF"><a href="#">Afghanistan</a></li>
+		<li data-value="AL"><a href="#">Albania</a></li>
+		<li data-value="DZ"><a href="#">Algeria</a></li>
+		<li data-value="AS"><a href="#">American Samoa</a></li>
+		<li data-value="AD"><a href="#">Andorra</a></li>
+		<li data-value="AO"><a href="#">Angola</a></li>
+		<li data-value="AI"><a href="#">Anguilla</a></li>
+		<li data-value="AQ"><a href="#">Antarctica</a></li>
+		<li data-value="AG"><a href="#">Antigua and Barbuda</a></li>
+		<li data-value="AR"><a href="#">Argentina</a></li>
+		<li data-value="AM"><a href="#">Armenia</a></li>
+		<li data-value="AW"><a href="#">Aruba</a></li>
+		<li data-value="AU"><a href="#">Australia</a></li>
+		<li data-value="AT"><a href="#">Austria</a></li>
+		<li data-value="AZ"><a href="#">Azerbaidjan</a></li>
+		<li data-value="BS"><a href="#">Bahamas</a></li>
+		<li data-value="BH"><a href="#">Bahrain</a></li>
+		<li data-value="BD"><a href="#">Bangladesh</a></li>
+		<li data-value="BB"><a href="#">Barbados</a></li>
+		<li data-value="BY"><a href="#">Belarus</a></li>
+		<li data-value="BE"><a href="#">Belgium</a></li>
+		<li data-value="BZ"><a href="#">Belize</a></li>
+		<li data-value="BJ"><a href="#">Benin</a></li>
+		<li data-value="BM"><a href="#">Bermuda</a></li>
+		<li data-value="BT"><a href="#">Bhutan</a></li>
+		<li data-value="BO"><a href="#">Bolivia</a></li>
+		<li data-value="BA"><a href="#">Bosnia-Herzegovina</a></li>
+		<li data-value="BW"><a href="#">Botswana</a></li>
+		<li data-value="BV"><a href="#">Bouvet Island</a></li>
+		<li data-value="BR"><a href="#">Brazil</a></li>
+	</ul>
+	<ul size="1" id="arrival" name="arrivalCountry">
+		<li data-value="AF"><a href="#">Afghanistan</a></li>
+		<li data-value="AL"><a href="#">Albania</a></li>
+		<li data-value="DZ"><a href="#">Algeria</a></li>
+		<li data-value="AS"><a href="#">American Samoa</a></li>
+		<li data-value="AD"><a href="#">Andorra</a></li>
+		<li data-value="AO"><a href="#">Angola</a></li>
+		<li data-value="AI"><a href="#">Anguilla</a></li>
+		<li data-value="AQ"><a href="#">Antarctica</a></li>
+		<li data-value="AG"><a href="#">Antigua and Barbuda</a></li>
+		<li data-value="AR"><a href="#">Argentina</a></li>
+		<li data-value="AM"><a href="#">Armenia</a></li>
+		<li data-value="AW"><a href="#">Aruba</a></li>
+		<li data-value="AU"><a href="#">Australia</a></li>
+		<li data-value="AT"><a href="#">Austria</a></li>
+		<li data-value="AZ"><a href="#">Azerbaidjan</a></li>
+		<li data-value="BS"><a href="#">Bahamas</a></li>
+		<li data-value="BH"><a href="#">Bahrain</a></li>
+		<li data-value="BD"><a href="#">Bangladesh</a></li>
+		<li data-value="BB"><a href="#">Barbados</a></li>
+		<li data-value="BY"><a href="#">Belarus</a></li>
+		<li data-value="BE"><a href="#">Belgium</a></li>
+		<li data-value="BZ"><a href="#">Belize</a></li>
+		<li data-value="BJ"><a href="#">Benin</a></li>
+		<li data-value="BM"><a href="#">Bermuda</a></li>
+		<li data-value="BT"><a href="#">Bhutan</a></li>
+		<li data-value="BO"><a href="#">Bolivia</a></li>
+		<li data-value="BA"><a href="#">Bosnia-Herzegovina</a></li>
+		<li data-value="BW"><a href="#">Botswana</a></li>
+		<li data-value="BV"><a href="#">Bouvet Island</a></li>
+		<li data-value="BR"><a href="#">Brazil</a></li>
+	</ul>
+</div>
+
+</body>
+</html>

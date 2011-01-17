@@ -13,12 +13,15 @@
  * http://mg-crea.com
  */
 
+
 (function( $, undefined ) {
 
 $.widget("ui.selectwheel", $.ui.mouse, {
 	widgetEventPrefix: "selectwheel",
 	options: {
 		active: 'ui-state-active',
+		target: 'select, ul',
+		wrap: false,
 		transferClasses: true,
 		distance: 5, // $.ui.mouse option
 		delay: 5, // $.ui.mouse option
@@ -44,8 +47,10 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 
 		// toggle active class on selected li ~ to style selected content
 		this.slots[i].list.children("li").removeClass(o.active).filter(":eq("+j+")").addClass(o.active);
+
+		// SHOULD TRIGGER SOME EVENT
 		// toggle input select ~ to retreive selected value
-		this.slots[i].select.val(j);
+		//this.slots[i].select.val(j);
 	},
 	_mouseCapture: function(e) {
 		console.log('$.ui.' + this.widgetName + ' ~ ' + '_mouseCapture', e);
@@ -78,16 +83,29 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 		e.preventDefault();
 		e.stopPropagation();
 	},
+	refreshSlot: function(i) {
+		$.extend(this.slots[i], {
+			listLength :  this.slots[i].list.children("li").length,
+			listWidth : this.slots[i].list.width(),
+			listOffset : this.slots[i].list.offset(),
+			listLiHeight : this.slots[i].list.children("li:first").height(),
+			elementHeight : this.element.height(),
+			slotYPos : 0
+		});
 
+		$.extend(this.slots[i], {
+			middleOffset : Math.ceil((this.slots[i].elementHeight - this.slots[i].listLiHeight)/2)
+		});
+	},
 	getCurrentSlot: function(e) {
 		$.each(this.slots, function(i) {
-			if(e.pageX - this.listOffset.left > 0) e.currentSlot = i * 1;
+			if(e.pageX - this.list.offset().left > 0) e.currentSlot = i * 1;
 		});
 		return e.currentSlot;
 	},
 	getCurrentOption: function(i) {
 		var c = (-Math.round((this.slots[i].slotYPos - this.slots[i].middleOffset) / this.slots[i].listLiHeight));
-		return (c < 0) ? 0 : (c > this.slots[i].optionData.length - 1) ? this.slots[i].optionData.length - 1 : c;
+		return (c < 0) ? 0 : (c > this.slots[i].listLength - 1) ? this.slots[i].listLength - 1 : c;
 	},
 
 	scrollTo: function (slot, destY, tempo) {
@@ -136,6 +154,135 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 
 		this.originalElement = this.element;
 
+		if(this.element.get(0).tagName.toLowerCase() === 'ul' || this.element.get(0).tagName.toLowerCase() === 'select') {
+			this.element = this.element.wrap($('<div>')).parent('div');
+		}
+
+		this.widgetId = self.widgetBaseClass + '-' +  Math.random().toString(16).slice(2, 10);
+		if(o.wrap) this.element = this.element.append($('<div>')).children('div:last');
+		this.element.attr('id', this.widgetId).addClass(self.widgetBaseClass + ' ui-widget ui-state-default');
+		//this.wrapper = $('<div>').addClass(self.widgetBaseClass + '-wrapper');
+		this.frame = $('<div>').addClass(self.widgetBaseClass + '-frame');
+		this.slots = {};
+
+		// convert selects to ul lists
+		this.originalElement.find(o.target).each(function(i) {
+			var $this = $(this);
+
+			self.slots[i] = {};
+
+			if($this.is("select")) {
+
+				$.extend(self.slots[i], {select : $this, optionData : []});
+
+				// serialize select element options
+				$this.hide().find('option')
+					.each(function(){
+						var $this = $(this);
+						self.slots[i].optionData.push({
+							value: $this.attr('value'),
+							text: $this.text(),
+							selected: $this.attr('selected'),
+							classes: $this.attr('class'),
+							parentOptGroup: $this.parent('optgroup').attr('label')
+						});
+					});
+
+				// create list
+				self.slots[i].list = $('<ul>').appendTo(self.element);
+
+				// write li's
+				for (var j = 0; j < self.slots[i].optionData.length; j++) {
+					var $li = $('<li data-value="' + self.slots[i].optionData[j].value + '"><a href="#">'+ self.slots[i].optionData[j].text +'</a></li>');
+					if(self.slots[i].optionData[j].selected) {
+						$li.addClass("ui-selected");
+						self.slots[i].selectedLi = j;
+					}
+					$li.appendTo(self.slots[i].list);
+				}
+
+				$this = self.slots[i].list;
+
+			}
+
+			$this.addClass(self.widgetBaseClass + '-list ui-widget ui-widget-content')
+				//.attr('data-select-name', self.slots[i].select.attr('name'))
+				.css({
+					'-webkit-transform': 'translate3d(0px, 0px, 0px)',
+					'-webkit-transition-duration': '500ms',
+					'-webkit-transition-timing-function': 'cubic-bezier(0, 0, 0.2, 1)',
+					'position': 'relative',
+					'top': '0px'
+				});
+
+			self.slots[i] = {list : $this};
+			self.refreshSlot(i);
+
+			self.setPosition(i, self.slots[i].middleOffset - (self.slots[i].listLiHeight * self.slots[i].selectedLi));
+
+		});
+
+		// process ul lists
+		this.originalElement.find("ul").each(function(i) {
+			var $this = $(this);
+
+
+		});
+
+		// insert frame
+		this.frame.appendTo(this.element);
+
+		// mouse click
+		this.element.data("selectwheel", this).bind('click.'+this.widgetName, this._mouseClick);
+
+		// mouse init
+		this._mouseInit();
+
+		console.log('$.ui.' + this.widgetName + ' ~ ' + '_selectwheel()', self.slots);
+
+		return true;
+	},
+
+	destroy: function() {
+		this.element.removeData(this.widgetName)
+			.removeClass(this.widgetBaseClass + '-disabled' + ' ' + this.namespace + '-state-disabled')
+			.removeAttr('aria-disabled')
+			.unbind('click.'+this.widgetName);
+
+		// call mouse destroy function
+		this._mouseDestroy();
+
+		// call widget destroy function
+		$.widget.prototype.destroy.apply(this, arguments);
+	}
+
+});
+
+$.widget("ui.selectwheel2", {
+	widgetEventPrefix: "selectwheel2",
+	options: {
+		active: 'ui-state-active',
+		transferClasses: true,
+		distance: 5, // $.ui.mouse option
+		delay: 5, // $.ui.mouse option
+		debug: true
+	},
+
+	_create: function() {
+		console.log('$.ui.' + this.widgetName + ' ~ ' + '_create()', [this.options]);
+		this._selectwheel( true );
+	},
+
+	_selectwheel: function( init ) {
+		var self = this,
+			o = this.options;
+
+		if (!o.debug) {
+			logger.disableLogger();
+		}
+
+		this.originalElement = this.element;
+
 		if(this.element.get(0).tagName.toLowerCase() === 'select') {
 			this.element = this.element.wrap($('<div>')).parent('div');
 		}
@@ -143,14 +290,16 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 		this.widgetId = self.widgetBaseClass + '-' +  Math.random().toString(16).slice(2, 10);
 		this.element = this.element.append($('<div>')).children('div:last');
 		this.element.attr('id', this.widgetId).addClass(self.widgetBaseClass + ' ui-widget ui-state-default');
-		this.wrapper = $('<div>').addClass(self.widgetBaseClass + '-wrapper');
-		this.frame = $('<div>').addClass(self.widgetBaseClass + '-frame');
 
 		this.selects = this.originalElement.find("select").hide();
 		this.slots = {};
 
 		$.each(this.selects, function(i) {
+
 			self.slots[i] = {select : $(this), optionData : [], list : undefined};
+
+			// create list
+			self.slots[i].list = $('<ul>').addClass(self.widgetBaseClass + '-list ui-widget ui-widget-content').appendTo(self.element);
 
 			// serialize select element options
 			self.slots[i].select.find('option')
@@ -164,18 +313,6 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 					});
 				});
 
-			// create list
-			self.slots[i].list = $('<ul>').addClass(self.widgetBaseClass + '-list ui-widget ui-widget-content')
-				.attr('data-select-name', self.slots[i].select.attr('name'))
-				.css({
-					'-webkit-transform': 'translate3d(0px, 0px, 0px)',
-					'-webkit-transition-duration': '500ms',
-					'-webkit-transition-timing-function': 'cubic-bezier(0, 0, 0.2, 1)',
-					'position': 'relative',
-					'top': '0px'
-				})
-				.appendTo(self.wrapper);
-
 			//write li's
 			for (var j = 0; j < self.slots[i].optionData.length; j++) {
 				var $li = $('<li data-option-value="' + self.slots[i].optionData[j].value + '"><a href="#">'+ self.slots[i].optionData[j].text +'</a></li>');
@@ -188,31 +325,9 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 
 		});
 
-		// hide selects
-		//this.element.children().hide();
+		this.element.listwheel(o);
 
-		// insert new wrapper
-		this.wrapper.appendTo(this.element);
-		this.frame.appendTo(this.element);
-
-		this.wrapper.children("ul").each(function(i) {
-			self.slots[i].listWidth = $(this).width();
-			self.slots[i].listLiHeight = $(this).children("li:first").height();
-			self.slots[i].elementHeight = self.element.height();
-			self.slots[i].middleOffset = Math.ceil((self.slots[i].elementHeight - self.slots[i].listLiHeight)/2);
-			self.slots[i].listOffset = $(this).offset();
-			self.slots[i].slotYPos = 0;
-
-			console.log(self.slots[i]);
-
-			self.setPosition(i, self.slots[i].middleOffset - (self.slots[i].listLiHeight * self.slots[i].selectedLi));
-		});
-
-		// mouse click
-		this.element.data("selectwheel", this).bind('click.'+this.widgetName, this._mouseClick);
-
-		// mouse init
-		this._mouseInit();
+		console.log('$.ui.' + this.widgetName + ' ~ ' + '_selectwheel()', self.slots);
 
 		return true;
 	},
@@ -220,11 +335,7 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 	destroy: function() {
 		this.element.removeData(this.widgetName)
 			.removeClass(this.widgetBaseClass + '-disabled' + ' ' + this.namespace + '-state-disabled')
-			.removeAttr('aria-disabled')
-			.unbind('click.'+this.widgetName);
-
-		// call mouse destroy function
-		this._mouseDestroy();
+			.removeAttr('aria-disabled');
 
 		// call widget destroy function
 		$.widget.prototype.destroy.apply(this, arguments);
