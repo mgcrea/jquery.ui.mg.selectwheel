@@ -25,10 +25,10 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 		debug: true
 	},
 	_mouseStart: function(e) {
-		//console.log('_mouseStart', e);
+		//console.log('$.ui.' + self.widgetName + ' ~ ' + '_mouseStart()', e);
 	},
 	_mouseDrag: function(e) {
-		//console.log('_mouseDrag', e);
+		//console.log('$.ui.' + self.widgetName + ' ~ ' + '_mouseDrag()', e);
 		this.scrollTo(this._mouseCaptureEvent.currentSlot, this._mouseCaptureEvent.slotYPos + (e.pageY - this._mouseDownEvent.pageY));
 	},
 	_mouseStop: function(e) {
@@ -42,9 +42,9 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 		console.log('$.ui.' + this.widgetName + ' ~ ' + this.slots[i].slotYPos, [this.slots[i].middleOffset, this.slots[i].listLiHeight * j]);
 		this.scrollTo(i, this.slots[i].middleOffset - (this.slots[i].listLiHeight * j));
 
-		// toggle active class on selected li
+		// toggle active class on selected li ~ to style selected content
 		this.slots[i].list.children("li").removeClass(o.active).filter(":eq("+j+")").addClass(o.active);
-		// toggle input select
+		// toggle input select ~ to retreive selected value
 		this.slots[i].select.val(j);
 	},
 	_mouseCapture: function(e) {
@@ -187,9 +187,6 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 			}
 
 		});
-
-
-		console.log(this.slots);
 
 		// hide selects
 		//this.element.children().hide();
