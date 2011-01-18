@@ -222,12 +222,14 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 
 		});
 
-		// process ul lists
-		this.originalElement.find("ul").each(function(i) {
-			var $this = $(this);
-
-
-		});
+		this.element.bind("refresh", function(e) {
+			$.each(self.slots, function(i) {
+				self.refreshSlot(i);
+				console.log()
+				self.setPosition(i, self.slots[i].middleOffset);
+			});
+			console.log('$.ui.' + this.widgetName + ' ~ ' + 'refresh()', self.slots);
+		});//.trigger("refresh");
 
 		// insert frame
 		this.frame.appendTo(this.element);
