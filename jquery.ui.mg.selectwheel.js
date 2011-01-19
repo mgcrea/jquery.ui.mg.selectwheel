@@ -14,7 +14,7 @@
  */
 
 
-(function( $, undefined ) {
+(function( $, console, undefined ) {
 
 $.widget("ui.selectwheel", $.ui.mouse, {
 	widgetEventPrefix: "selectwheel",
@@ -22,6 +22,7 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 		active: 'ui-state-active',
 		target: 'select, ul',
 		wrap: false,
+		frame: true,
 		transferClasses: true,
 		distance: 5, // $.ui.mouse option
 		delay: 5, // $.ui.mouse option
@@ -148,9 +149,7 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 		var self = this,
 			o = this.options;
 
-		if (!o.debug) {
-			logger.disableLogger();
-		}
+		if(!o.debug) console = { log: function(){} };
 
 		this.originalElement = this.element;
 
@@ -160,16 +159,16 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 
 		this.widgetId = self.widgetBaseClass + '-' +  Math.random().toString(16).slice(2, 10);
 		if(o.wrap) this.element = this.element.append($('<div>')).children('div:last');
-		this.element.attr('id', this.widgetId).addClass(self.widgetBaseClass + ' ui-widget ui-state-default');
+		this.element.addClass(self.widgetBaseClass + ' ui-widget ui-state-default');//.attr('id', this.widgetId);
 		//this.wrapper = $('<div>').addClass(self.widgetBaseClass + '-wrapper');
-		this.frame = $('<div>').addClass(self.widgetBaseClass + '-frame');
+
 		this.slots = {};
 
 		// convert selects to ul lists
 		this.originalElement.find(o.target).each(function(i) {
 			var $this = $(this);
 
-			self.slots[i] = {};
+			self.slots[i] = {list : $this};
 
 			if($this.is("select")) {
 
@@ -195,7 +194,7 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 				for (var j = 0; j < self.slots[i].optionData.length; j++) {
 					var $li = $('<li data-value="' + self.slots[i].optionData[j].value + '"><a href="#">'+ self.slots[i].optionData[j].text +'</a></li>');
 					if(self.slots[i].optionData[j].selected) {
-						$li.addClass("ui-selected");
+						$li.addClass("ui-state-selected");
 						self.slots[i].selectedLi = j;
 					}
 					$li.appendTo(self.slots[i].list);
@@ -215,7 +214,6 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 					'top': '0px'
 				});
 
-			self.slots[i] = {list : $this};
 			self.refreshSlot(i);
 
 			self.setPosition(i, self.slots[i].middleOffset - (self.slots[i].listLiHeight * self.slots[i].selectedLi));
@@ -225,14 +223,13 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 		this.element.bind("refresh", function(e) {
 			$.each(self.slots, function(i) {
 				self.refreshSlot(i);
-				console.log()
-				self.setPosition(i, self.slots[i].middleOffset);
+				self.setPosition(i, self.slots[i].middleOffset); // self.slots[i].elementHeight - self.slots[i].listLiHeight);
 			});
-			console.log('$.ui.' + this.widgetName + ' ~ ' + 'refresh()', self.slots);
+			console.log('$.ui.' + self.widgetName + ' ~ ' + 'refresh()', self.slots);
 		});//.trigger("refresh");
 
 		// insert frame
-		this.frame.appendTo(this.element);
+		if (o.frame) this.frame = $('<div>').addClass(self.widgetBaseClass + '-frame').appendTo(this.element);
 
 		// mouse click
 		this.element.data("selectwheel", this).bind('click.'+this.widgetName, this._mouseClick);
@@ -260,93 +257,6 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 
 });
 
-$.widget("ui.selectwheel2", {
-	widgetEventPrefix: "selectwheel2",
-	options: {
-		active: 'ui-state-active',
-		transferClasses: true,
-		distance: 5, // $.ui.mouse option
-		delay: 5, // $.ui.mouse option
-		debug: true
-	},
-
-	_create: function() {
-		console.log('$.ui.' + this.widgetName + ' ~ ' + '_create()', [this.options]);
-		this._selectwheel( true );
-	},
-
-	_selectwheel: function( init ) {
-		var self = this,
-			o = this.options;
-
-		if (!o.debug) {
-			logger.disableLogger();
-		}
-
-		this.originalElement = this.element;
-
-		if(this.element.get(0).tagName.toLowerCase() === 'select') {
-			this.element = this.element.wrap($('<div>')).parent('div');
-		}
-
-		this.widgetId = self.widgetBaseClass + '-' +  Math.random().toString(16).slice(2, 10);
-		this.element = this.element.append($('<div>')).children('div:last');
-		this.element.attr('id', this.widgetId).addClass(self.widgetBaseClass + ' ui-widget ui-state-default');
-
-		this.selects = this.originalElement.find("select").hide();
-		this.slots = {};
-
-		$.each(this.selects, function(i) {
-
-			self.slots[i] = {select : $(this), optionData : [], list : undefined};
-
-			// create list
-			self.slots[i].list = $('<ul>').addClass(self.widgetBaseClass + '-list ui-widget ui-widget-content').appendTo(self.element);
-
-			// serialize select element options
-			self.slots[i].select.find('option')
-				.each(function(){
-					self.slots[i].optionData.push({
-						value: $(this).attr('value'),
-						text: $(this).text(),
-						selected: $(this).attr('selected'),
-						classes: $(this).attr('class'),
-						parentOptGroup: $(this).parent('optgroup').attr('label')
-					});
-				});
-
-			//write li's
-			for (var j = 0; j < self.slots[i].optionData.length; j++) {
-				var $li = $('<li data-option-value="' + self.slots[i].optionData[j].value + '"><a href="#">'+ self.slots[i].optionData[j].text +'</a></li>');
-				if(self.slots[i].optionData[j].selected) {
-					$li.addClass("ui-selected");
-					self.slots[i].selectedLi = j;
-				}
-				$li.appendTo(self.slots[i].list);
-			}
-
-		});
-
-		this.element.listwheel(o);
-
-		console.log('$.ui.' + this.widgetName + ' ~ ' + '_selectwheel()', self.slots);
-
-		return true;
-	},
-
-	destroy: function() {
-		this.element.removeData(this.widgetName)
-			.removeClass(this.widgetBaseClass + '-disabled' + ' ' + this.namespace + '-state-disabled')
-			.removeAttr('aria-disabled');
-
-		// call widget destroy function
-		$.widget.prototype.destroy.apply(this, arguments);
-	}
-
-});
-
-window.console.log2 = window.console.log;
-
 function splitCssMatrix(m, r) {
 	var re = new RegExp('matrix\\(' + '([-+]?\\d+)' + '*.?,*.?' + '([-+]?\\d+)' + '*.?,*.?' + '([-+]?\\d+)' + '*.?,*.?' + '([-+]?\\d+)' + '*.?,*.?' + '([-+]?\\d+)' + '*.?,*.?' + '([-+]?\\d+)' + '*.?,*.?', ["i"]);
 	var rs = re.exec(m);
@@ -354,31 +264,4 @@ function splitCssMatrix(m, r) {
 	return rs;
 }
 
-/*
- * logger wrapper
- */
-
-var oldConsoleLog = window.console.log;
-
-$.enableLog = function(widget) {
-	$.log = oldConsoleLog;
-}
-
-var logger = function() {
-	var oldConsoleLog = null;
-	var pub = {};
-
-	pub.enableLogger = function enableLogger() {
-		if(oldConsoleLog == null) return;
-		window['console']['log'] = oldConsoleLog;
-	};
-
-	pub.disableLogger = function disableLogger() {
-		oldConsoleLog = console.log;
-		window['console']['log'] = function() {};
-	};
-
-	return pub;
-}();
-
-})(jQuery);
+})(jQuery, console);
