@@ -45,13 +45,13 @@
 					return false;
 				},
 				focus: function( event, ui ) {
-					//console.log("$.ui.autocomplete.focus()", event, ui);
+					console.log("$.ui.autocomplete.focus()", event, ui);
 					//$( "#PagesSearch" ).val( ui.item.value.toUpperCase() );
 					return false;
 				},
 				select: function( event, ui ) {
-					//console.log("$.ui.autocomplete.select()", event, ui);
-					//$( "#PagesSearch" ).val( ui.item.value.toUpperCase() );
+					console.log("$.ui.autocomplete.select()", event, ui);
+					$("#search").val(ui.item.value.toUpperCase());
 					//$( "#project-id" ).val( ui.item.value );
 					//$( "#project-description" ).html( ui.item.desc );
 					//$( "#project-icon" ).attr( "src", "images/" + ui.item.icon );
@@ -65,7 +65,18 @@
 				}
 			});
 
-			$(".ui-trigger-selectwheel").selectwheel({'wrap' : false, 'target' : "ul", 'debug' : true});
+			$(".ui-trigger-selectwheel").selectwheel({
+				'wrap' : false,
+				'frame' : true,
+				'target' : "ul",
+				'select' : function(ev, ui) {
+					console.log('$.ui.selectwheel.select()', [ev, ui]);
+					setTimeout(function() {
+						$(ev.target).find('a').trigger('mouseenter').trigger('click');
+					}, 150);
+				},
+				'debug' : true
+			});
 
 			//$(".ui-trigger-selectwheel").eq(1).selectwheel({'target' : "ul", 'debug': true});
 
