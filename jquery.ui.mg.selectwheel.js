@@ -21,6 +21,7 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 	options: {
 		active: 'ui-state-active',
 		target: 'select, ul',
+		select: undefined,
 		wrap: false,
 		frame: true,
 		transferClasses: true,
@@ -37,7 +38,7 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 	},
 	_mouseStop: function(e) {
 		console.log('$.ui.' + this.widgetName + ' ~ ' + '_mouseStop()', e);
-		var i = this._mouseCaptureEvent.currentSlot // currentSlot
+		var i = this._mouseCaptureEvent.currentSlot, // currentSlot
 			j = this.getCurrentOption(i), // currentOption
 			o = this.options;
 		this._mouseCaptureEvent.stopped = true;
@@ -46,10 +47,13 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 		console.log('$.ui.' + this.widgetName + ' ~ ' + this.slots[i].slotYPos, [this.slots[i].middleOffset, this.slots[i].listLiHeight * j]);
 		this.scrollTo(i, this.slots[i].middleOffset - (this.slots[i].listLiHeight * j));
 
-		// toggle active class on selected li ~ to style selected content
-		this.slots[i].list.children("li").removeClass(o.active).filter(":eq("+j+")").addClass(o.active);
+		// update current option
+		this._mouseCaptureEvent.currentOption = j;
+
+
 
 		// SHOULD TRIGGER SOME EVENT
+
 		// toggle input select ~ to retreive selected value
 		//this.slots[i].select.val(j);
 	},
@@ -70,15 +74,34 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 		return true;
 	},
 	_mouseClick: function(e) {
-		var self = $.data(this, "selectwheel");
+		var self = $.data(this, "selectwheel"),
+			o = self.options;
+
 		console.log('$.ui.' + self.widgetName + ' ~ ' + '_mouseClick', e);
 		var $t = $(e.target);
 
 		if(!self._mouseCaptureEvent.stopped) {
+			// was a click
+
+			// scrollTo position
 			self.scrollTo(self._mouseCaptureEvent.currentSlot,
 				self._mouseCaptureEvent.slotYPos + (self.slots[self._mouseCaptureEvent.currentSlot].elementHeight/2 - e.offsetY)
 			);
+
+			// trigger stop event
 			self._mouseStop(self._mouseCaptureEvent);
+
+			var i = self._mouseCaptureEvent.currentSlot, // currentSlot
+				j = self._mouseCaptureEvent.currentOption; // currentOption
+
+			// toggle active class on selected li ~ to style selected content
+			self.slots[i].list.children("li")
+				.filter('.' + o.active).removeClass(o.active).end()
+				.filter(":eq("+j+")").addClass(o.active)
+				.trigger('select' + '.' + this.widgetName);
+
+		} else {
+			// was a drag
 		}
 
 		e.preventDefault();
@@ -220,13 +243,15 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 
 		});
 
-		this.element.bind("refresh", function(e) {
+		this.element.bind('refresh' + '.' + this.widgetName, function(e) {
 			$.each(self.slots, function(i) {
 				self.refreshSlot(i);
 				self.setPosition(i, self.slots[i].middleOffset); // self.slots[i].elementHeight - self.slots[i].listLiHeight);
 			});
 			console.log('$.ui.' + self.widgetName + ' ~ ' + 'refresh()', self.slots);
 		});//.trigger("refresh");
+
+		if($.isFunction(o.select)) this.element.bind('select' + '.' + this.widgetName, o.select);
 
 		// insert frame
 		if (o.frame) this.frame = $('<div>').addClass(self.widgetBaseClass + '-frame').appendTo(this.element);
