@@ -21,7 +21,8 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 	options: {
 		active: 'ui-state-active',
 		target: 'select, ul',
-		select: undefined,
+		create: undefined, // called after creation
+		select: undefined, // called after selection
 		wrap: false,
 		frame: true,
 		transferClasses: true,
@@ -97,8 +98,8 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 			// toggle active class on selected li ~ to style selected content
 			self.slots[i].list.children("li")
 				.filter('.' + o.active).removeClass(o.active).end()
-				.filter(":eq("+j+")").addClass(o.active)
-				.trigger('select' + '.' + this.widgetName);
+				.filter(":visible").eq(j).addClass(o.active)
+				.trigger('select' + '.' + this.widgetName, {currentSlot : i, currentOption : j});
 
 		} else {
 			// was a drag
@@ -108,12 +109,16 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 		e.stopPropagation();
 	},
 	refreshSlot: function(i) {
+
+		var $visibleLis = this.slots[i].list.children("li:visible");
+
 		$.extend(this.slots[i], {
-			listLength :  this.slots[i].list.children("li").length,
+			listLength :  $visibleLis.length,
 			listWidth : this.slots[i].list.width(),
 			listOffset : this.slots[i].list.offset(),
-			listLiHeight : this.slots[i].list.children("li:first").height(),
+			listLiHeight : $visibleLis.filter(":first").height(),
 			elementHeight : this.element.height(),
+			selectedLi : $visibleLis.filter(".ui-state-active").length > 0 ? $visibleLis.filter(".ui-state-active").index() : $visibleLis.filter(".ui-state-selected").length > 0 ? $visibleLis.filter(".ui-state-selected").index() : 0,
 			slotYPos : 0
 		});
 
@@ -181,6 +186,7 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 		}
 
 		this.widgetId = self.widgetBaseClass + '-' +  Math.random().toString(16).slice(2, 10);
+		if($.isFunction(o.select)) this.element.bind('select' + '.' + this.widgetName, o.select);
 		if(o.wrap) this.element = this.element.append($('<div>')).children('div:last');
 		this.element.addClass(self.widgetBaseClass + ' ui-widget ui-state-default');//.attr('id', this.widgetId);
 		//this.wrapper = $('<div>').addClass(self.widgetBaseClass + '-wrapper');
@@ -237,21 +243,28 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 					'top': '0px'
 				});
 
-			self.refreshSlot(i);
+			$this.bind('refresh' + '.' + this.widgetName, function(ev, ui) {
+					self.refreshSlot(i);
+					self.setPosition(i, self.slots[i].middleOffset - (self.slots[i].listLiHeight * self.slots[i].selectedLi)); // set position to selectedLi adjusted to be on the middle.
+					console.log('$.ui.' + self.widgetName + ' ~ ' + 'refresh()', [i, self.slots[i]]);
 
-			self.setPosition(i, self.slots[i].middleOffset - (self.slots[i].listLiHeight * self.slots[i].selectedLi));
+					ev.preventDefault();
+					ev.stopPropagation();
+					return true;
+			}).trigger('refresh');
 
 		});
 
-		this.element.bind('refresh' + '.' + this.widgetName, function(e) {
+		// global refresh
+		this.element.bind('refresh' + '.' + this.widgetName, function(ev, ui) {
 			$.each(self.slots, function(i) {
-				self.refreshSlot(i);
-				self.setPosition(i, self.slots[i].middleOffset); // self.slots[i].elementHeight - self.slots[i].listLiHeight);
+				self.slots[i].list.trigger('refresh');
 			});
-			console.log('$.ui.' + self.widgetName + ' ~ ' + 'refresh()', self.slots);
-		});//.trigger("refresh");
 
-		if($.isFunction(o.select)) this.element.bind('select' + '.' + this.widgetName, o.select);
+			ev.preventDefault();
+			ev.stopPropagation();
+			return true;
+		});//.trigger("refresh");
 
 		// insert frame
 		if (o.frame) this.frame = $('<div>').addClass(self.widgetBaseClass + '-frame').appendTo(this.element);
@@ -261,6 +274,9 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 
 		// mouse init
 		this._mouseInit();
+
+		// create event
+		if($.isFunction(o.create)) this.element.bind('create' + '.' + this.widgetName, o.create).trigger('create');
 
 		console.log('$.ui.' + this.widgetName + ' ~ ' + '_selectwheel()', self.slots);
 
