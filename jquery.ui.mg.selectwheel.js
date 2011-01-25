@@ -243,6 +243,7 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 					'top': '0px'
 				});
 
+			// slot init/refresh
 			$this.bind('refresh' + '.' + this.widgetName, function(ev, ui) {
 					self.refreshSlot(i);
 					self.setPosition(i, self.slots[i].middleOffset - (self.slots[i].listLiHeight * self.slots[i].selectedLi)); // set position to selectedLi adjusted to be on the middle.
@@ -255,7 +256,7 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 
 		});
 
-		// global refresh
+		// global refresh trigger
 		this.element.bind('refresh' + '.' + this.widgetName, function(ev, ui) {
 			$.each(self.slots, function(i) {
 				self.slots[i].list.trigger('refresh');
@@ -264,7 +265,7 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 			ev.preventDefault();
 			ev.stopPropagation();
 			return true;
-		});//.trigger("refresh");
+		});
 
 		// insert frame
 		if (o.frame) this.frame = $('<div>').addClass(self.widgetBaseClass + '-frame').appendTo(this.element);
