@@ -21,7 +21,8 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 	options: {
 		active: 'ui-state-active',
 		target: 'select, ul',
-		select: undefined,
+		create: undefined, // called after creation
+		select: undefined, // called after selection
 		wrap: false,
 		frame: true,
 		transferClasses: true,
@@ -52,7 +53,7 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 
 
 
-		// SHOULD TRIGGER SOME EVENT
+		// SHOULD TRIGGER SOME EVENT ~ to select on drag
 
 		// toggle input select ~ to retreive selected value
 		//this.slots[i].select.val(j);
@@ -97,23 +98,34 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 			// toggle active class on selected li ~ to style selected content
 			self.slots[i].list.children("li")
 				.filter('.' + o.active).removeClass(o.active).end()
-				.filter(":eq("+j+")").addClass(o.active)
-				.trigger('select' + '.' + this.widgetName);
+				.filter(":visible").eq(j).addClass(o.active)
+				.trigger('select' + '.' + this.widgetName, {currentSlot : i, currentOption : j});
+
+			// update select val if necessary
+			if(!empty(self.slots[i].select)) {
+				self.slots[i].select.val(self.slots[i].optionData[j].value);
+			}
 
 		} else {
 			// was a drag
+
+			// misses mouseup outside element !
 		}
 
 		e.preventDefault();
 		e.stopPropagation();
 	},
 	refreshSlot: function(i) {
+
+		var $visibleLis = this.slots[i].list.children("li:visible");
+
 		$.extend(this.slots[i], {
-			listLength :  this.slots[i].list.children("li").length,
+			listLength :  $visibleLis.length,
 			listWidth : this.slots[i].list.width(),
 			listOffset : this.slots[i].list.offset(),
-			listLiHeight : this.slots[i].list.children("li:first").height(),
+			listLiHeight : $visibleLis.filter(":first").height(),
 			elementHeight : this.element.height(),
+			selectedLi : $visibleLis.filter(".ui-state-active").length > 0 ? $visibleLis.filter(".ui-state-active").index() : $visibleLis.filter(".ui-state-selected").length > 0 ? $visibleLis.filter(".ui-state-selected").index() : 0,
 			slotYPos : 0
 		});
 
@@ -135,13 +147,12 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 	scrollTo: function (slot, destY, tempo) {
 		//console.log('scrollTo', [slot, destY, tempo]);
 		this.setPosition(slot, destY ? destY : 0, tempo);
-
-		// If we are outside of the boundaries go back to the sheepfold
-		/*if (this.slotEl[slotNum].slotYPosition > 0 || this.slotEl[slotNum].slotYPosition < this.slotEl[slotNum].slotMaxScroll) {
-			this.slotEl[slotNum].addEventListener('webkitTransitionEnd', this, false);
-		}*/
 	},
 	setPosition: function (slot, destY, tempo) {
+
+		this.slots[slot].list.get(0).style.top = destY + 'px';
+		this.slots[slot].slotYPos = destY;
+
 		//console.log('setPosition', [slot, destY, tempo]);
 
 		//transition 1 ~ pur wT
@@ -151,8 +162,19 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 		//transition 2 ~ animate.enhanced
 		//if(tempo) this.slots[slot].list.css('-webkit-transition-duration', tempo);
 
-		this.slots[slot].list.animate({top: destY}, tempo ? tempo : 0, function() {});
-		this.slots[slot].slotYPos = destY;
+		//this.slots[slot].list.animate({top: destY}, tempo ? tempo : 350, function() {});
+		//console.log(destY);
+
+		/*console.log('A' + destY);
+		var self = this,
+			o = this.options;
+		$.throttle(1000, function() {
+			console.log('B' + destY);
+
+		})();*/
+
+		//this.slots[slot].list.get(0).style.webkitTransform = 'translate3d(0, ' + destY + 'px, 0)';
+
 
 		//transition 3 ~ css top
 		//this.slots[slot].list.css('top', this._mouseCaptureEvent.slotCssTop + destY);
@@ -181,6 +203,7 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 		}
 
 		this.widgetId = self.widgetBaseClass + '-' +  Math.random().toString(16).slice(2, 10);
+		if($.isFunction(o.select)) this.element.bind('select' + '.' + this.widgetName, o.select);
 		if(o.wrap) this.element = this.element.append($('<div>')).children('div:last');
 		this.element.addClass(self.widgetBaseClass + ' ui-widget ui-state-default');//.attr('id', this.widgetId);
 		//this.wrapper = $('<div>').addClass(self.widgetBaseClass + '-wrapper');
@@ -231,27 +254,35 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 				//.attr('data-select-name', self.slots[i].select.attr('name'))
 				.css({
 					'-webkit-transform': 'translate3d(0px, 0px, 0px)',
-					'-webkit-transition-duration': '500ms',
+					'-webkit-transition-duration': '200ms',
 					'-webkit-transition-timing-function': 'cubic-bezier(0, 0, 0.2, 1)',
 					'position': 'relative',
 					'top': '0px'
 				});
 
-			self.refreshSlot(i);
+			// slot init/refresh
+			$this.bind('refresh' + '.' + this.widgetName, function(ev, ui) {
+					self.refreshSlot(i);
+					self.setPosition(i, self.slots[i].middleOffset - (self.slots[i].listLiHeight * self.slots[i].selectedLi)); // set position to selectedLi adjusted to be on the middle.
+					console.log('$.ui.' + self.widgetName + ' ~ ' + 'refresh()', [i, self.slots[i]]);
 
-			self.setPosition(i, self.slots[i].middleOffset - (self.slots[i].listLiHeight * self.slots[i].selectedLi));
+					ev.preventDefault();
+					ev.stopPropagation();
+					return true;
+			}).trigger('refresh');
 
 		});
 
-		this.element.bind('refresh' + '.' + this.widgetName, function(e) {
+		// global refresh trigger
+		this.element.bind('refresh' + '.' + this.widgetName, function(ev, ui) {
 			$.each(self.slots, function(i) {
-				self.refreshSlot(i);
-				self.setPosition(i, self.slots[i].middleOffset); // self.slots[i].elementHeight - self.slots[i].listLiHeight);
+				self.slots[i].list.trigger('refresh');
 			});
-			console.log('$.ui.' + self.widgetName + ' ~ ' + 'refresh()', self.slots);
-		});//.trigger("refresh");
 
-		if($.isFunction(o.select)) this.element.bind('select' + '.' + this.widgetName, o.select);
+			ev.preventDefault();
+			ev.stopPropagation();
+			return true;
+		});
 
 		// insert frame
 		if (o.frame) this.frame = $('<div>').addClass(self.widgetBaseClass + '-frame').appendTo(this.element);
@@ -261,6 +292,9 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 
 		// mouse init
 		this._mouseInit();
+
+		// create event
+		if($.isFunction(o.create)) this.element.bind('create' + '.' + this.widgetName, o.create).trigger('create');
 
 		console.log('$.ui.' + this.widgetName + ' ~ ' + '_selectwheel()', self.slots);
 
