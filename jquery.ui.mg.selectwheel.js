@@ -53,7 +53,7 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 
 
 
-		// SHOULD TRIGGER SOME EVENT
+		// SHOULD TRIGGER SOME EVENT ~ to select on drag
 
 		// toggle input select ~ to retreive selected value
 		//this.slots[i].select.val(j);
@@ -101,8 +101,15 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 				.filter(":visible").eq(j).addClass(o.active)
 				.trigger('select' + '.' + this.widgetName, {currentSlot : i, currentOption : j});
 
+			// update select val if necessary
+			if(!empty(self.slots[i].select)) {
+				self.slots[i].select.val(self.slots[i].optionData[j].value);
+			}
+
 		} else {
 			// was a drag
+
+			// misses mouseup outside element !
 		}
 
 		e.preventDefault();
@@ -140,13 +147,12 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 	scrollTo: function (slot, destY, tempo) {
 		//console.log('scrollTo', [slot, destY, tempo]);
 		this.setPosition(slot, destY ? destY : 0, tempo);
-
-		// If we are outside of the boundaries go back to the sheepfold
-		/*if (this.slotEl[slotNum].slotYPosition > 0 || this.slotEl[slotNum].slotYPosition < this.slotEl[slotNum].slotMaxScroll) {
-			this.slotEl[slotNum].addEventListener('webkitTransitionEnd', this, false);
-		}*/
 	},
 	setPosition: function (slot, destY, tempo) {
+
+		this.slots[slot].list.get(0).style.top = destY + 'px';
+		this.slots[slot].slotYPos = destY;
+
 		//console.log('setPosition', [slot, destY, tempo]);
 
 		//transition 1 ~ pur wT
@@ -156,8 +162,19 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 		//transition 2 ~ animate.enhanced
 		//if(tempo) this.slots[slot].list.css('-webkit-transition-duration', tempo);
 
-		this.slots[slot].list.animate({top: destY}, tempo ? tempo : 0, function() {});
-		this.slots[slot].slotYPos = destY;
+		//this.slots[slot].list.animate({top: destY}, tempo ? tempo : 350, function() {});
+		//console.log(destY);
+
+		/*console.log('A' + destY);
+		var self = this,
+			o = this.options;
+		$.throttle(1000, function() {
+			console.log('B' + destY);
+
+		})();*/
+
+		//this.slots[slot].list.get(0).style.webkitTransform = 'translate3d(0, ' + destY + 'px, 0)';
+
 
 		//transition 3 ~ css top
 		//this.slots[slot].list.css('top', this._mouseCaptureEvent.slotCssTop + destY);
@@ -237,7 +254,7 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 				//.attr('data-select-name', self.slots[i].select.attr('name'))
 				.css({
 					'-webkit-transform': 'translate3d(0px, 0px, 0px)',
-					'-webkit-transition-duration': '500ms',
+					'-webkit-transition-duration': '200ms',
 					'-webkit-transition-timing-function': 'cubic-bezier(0, 0, 0.2, 1)',
 					'position': 'relative',
 					'top': '0px'
