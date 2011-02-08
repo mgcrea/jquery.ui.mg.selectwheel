@@ -96,14 +96,15 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 				j = self._mouseCaptureEvent.currentOption; // currentOption
 
 			// toggle active class on selected li ~ to style selected content
-			self.slots[i].list.children("li")
+			var v = self.slots[i].list.children("li")
 				.filter('.' + o.active).removeClass(o.active).end()
 				.filter(":visible").eq(j).addClass(o.active)
-				.trigger('select' + '.' + this.widgetName, {currentSlot : i, currentOption : j});
+				.trigger('select' + '.' + this.widgetName, {currentSlot : i, currentOption : j})
+				.data('value');
 
 			// update select val if necessary
 			if(!empty(self.slots[i].select)) {
-				self.slots[i].select.val(self.slots[i].optionData[j].value);
+				self.slots[i].select.val(v);
 			}
 
 		} else {
