@@ -14,7 +14,7 @@
  */
 
 
-(function( $, console, undefined ) {
+(function( $, console, undefined) {
 
 $.widget("ui.selectwheel", $.ui.mouse, {
 	widgetEventPrefix: "selectwheel",
@@ -28,7 +28,7 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 		transferClasses: true,
 		distance: 5, // $.ui.mouse option
 		delay: 5, // $.ui.mouse option
-		debug: true
+		debug: false
 	},
 	_mouseStart: function(e) {
 		//console.log('$.ui.' + self.widgetName + ' ~ ' + '_mouseStart()', e);
@@ -187,15 +187,16 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 
 
 	_create: function() {
-		console.log('$.ui.' + this.widgetName + ' ~ ' + '_create()', [this.options]);
-		this._selectwheel( true );
+		this._selectwheel(true);
 	},
 
 	_selectwheel: function( init ) {
 		var self = this,
 			o = this.options;
 
-		if(!o.debug) console = { log: function(){} };
+		if(!console || !console.log  || !o.debug) console = { log: function(){} };
+
+		console.log('$.ui.' + this.widgetName + ' ~ ' + '_create()', [this.options]);
 
 		this.originalElement = this.element;
 
@@ -265,6 +266,12 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 			$this.bind('refresh' + '.' + this.widgetName, function(ev, ui) {
 					self.refreshSlot(i);
 					self.setPosition(i, self.slots[i].middleOffset - (self.slots[i].listLiHeight * self.slots[i].selectedLi)); // set position to selectedLi adjusted to be on the middle.
+
+					// update select val if necessary
+					if(!empty(self.slots[i].select)) {
+						self.slots[i].select.val('');
+					}
+
 					console.log('$.ui.' + self.widgetName + ' ~ ' + 'refresh()', [i, self.slots[i]]);
 
 					ev.preventDefault();
@@ -324,4 +331,4 @@ function splitCssMatrix(m, r) {
 	return rs;
 }
 
-})(jQuery, console);
+})(jQuery, window.console);
