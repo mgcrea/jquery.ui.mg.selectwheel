@@ -26,6 +26,7 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 		wrap: false,
 		frame: true,
 		transferClasses: true,
+		use3d: true,
 		distance: 5, // $.ui.mouse option
 		delay: 5, // $.ui.mouse option
 		debug: false
@@ -66,7 +67,9 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 		// find current slot
 		self.getCurrentSlot(e);
 
-		e.deltaY = 0, e.slotYPos = this.slots[e.currentSlot].list.css('top').replace(/px/g, '') * 1;//, e.slotCssWtY = splitCssMatrix(this.slots[e.currentSlot].list.css('-webkit-transform'), 6) * 1;
+		e.deltaY = 0;
+		if(o.use3d) e.slotYPos = splitCssMatrix(this.slots[e.currentSlot].list.css('-webkit-transform'), 6) * 1;
+		else this.slots[e.currentSlot].list.css('top').replace(/px/g, '') * 1;
 
 		this._mouseCaptureEvent = e;
 
@@ -142,6 +145,7 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 	},
 	getCurrentOption: function(i) {
 		var c = (-Math.round((this.slots[i].slotYPos - this.slots[i].middleOffset) / this.slots[i].listLiHeight));
+		console.log(this.slots[i].slotYPos, c);
 		return (c < 0) ? 0 : (c > this.slots[i].listLength - 1) ? this.slots[i].listLength - 1 : c;
 	},
 
@@ -151,38 +155,22 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 	},
 	setPosition: function (slot, destY, tempo) {
 
-		this.slots[slot].list.get(0).style.top = destY + 'px';
-		this.slots[slot].slotYPos = destY;
-
 		//console.log('setPosition', [slot, destY, tempo]);
 
+		// what is this for ?? update pos for ?
+		this.slots[slot].slotYPos = destY;
+
 		//transition 1 ~ pur wT
-		//if(tempo) this.slots[slot].list.css('-webkit-transition-duration', tempo);
-		//this.slots[slot].list.css('-webkit-transform', 'translate3d(0px, ' + (this._mouseCaptureEvent.slotCssWtY + destY) + 'px, 0px)');
+		if(this.options.use3d) {
+			//if(tempo) this.slots[slot].list.css('-webkit-transition-duration', tempo);
+			//this.slots[slot].list.css('-webkit-transform', 'translate3d(0, ' + destY + 'px, 0)'); ~ jquery hook ? must run a jsperf on this.
+			this.slots[slot].list.get(0).style.webkitTransform = 'translate3d(0, ' + destY + 'px, 0)';
+			// useless here but maybe somewhere
+			//this.slots[slot].list.unbind('webkitTransitionEnd').bind('webkitTransitionEnd', function(e) { console.log('!!!'); });
+		} else {
+			this.slots[slot].list.get(0).style.top = destY + 'px';
+		}
 
-		//transition 2 ~ animate.enhanced
-		//if(tempo) this.slots[slot].list.css('-webkit-transition-duration', tempo);
-
-		//this.slots[slot].list.animate({top: destY}, tempo ? tempo : 350, function() {});
-		//console.log(destY);
-
-		/*console.log('A' + destY);
-		var self = this,
-			o = this.options;
-		$.throttle(1000, function() {
-			console.log('B' + destY);
-
-		})();*/
-
-		//this.slots[slot].list.get(0).style.webkitTransform = 'translate3d(0, ' + destY + 'px, 0)';
-
-
-		//transition 3 ~ css top
-		//this.slots[slot].list.css('top', this._mouseCaptureEvent.slotCssTop + destY);
-
-		// deprecated
-		//this.slots[slot].list.slotYPosition = destY;
-		//this.slots[slot].list.bind('webkitTransitionEnd', function(e) { console.log('!!!'); });
 	},
 
 
@@ -209,6 +197,8 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 		if(o.wrap) this.element = this.element.append($('<div>')).children('div:last');
 		this.element.addClass(self.widgetBaseClass + ' ui-widget ui-state-default');//.attr('id', this.widgetId);
 		//this.wrapper = $('<div>').addClass(self.widgetBaseClass + '-wrapper');
+
+		if(o.use3d) this._mouseCaptureEvent= {slotCssWtY : 0};
 
 		this.slots = {};
 
