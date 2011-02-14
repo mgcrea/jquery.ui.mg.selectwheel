@@ -14,7 +14,7 @@
  */
 
 
-(function( $, console, undefined) {
+(function($, console, undefined) {
 
 $.widget("ui.selectwheel", $.ui.mouse, {
 	widgetEventPrefix: "selectwheel",
@@ -112,6 +112,7 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 
 		} else {
 			// was a drag
+			//console.log('drag');
 
 			// misses mouseup outside element !
 		}
@@ -319,6 +320,15 @@ function splitCssMatrix(m, r) {
 	var rs = re.exec(m);
 	if(typeof r !== undefined) return rs[r];
 	return rs;
+}
+
+function empty (mixed_var) {
+    if (mixed_var === "" || mixed_var === 0 || mixed_var === "0" || mixed_var === null || mixed_var === false || typeof mixed_var === 'undefined') return true;
+    if (typeof mixed_var == 'object') {
+        for (var key in mixed_var) return false;
+        return true;
+    }
+    return false;
 }
 
 })(jQuery, window.console);
