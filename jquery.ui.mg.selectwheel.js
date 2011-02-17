@@ -23,6 +23,7 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 		target: 'select, ul',
 		create: undefined, // called after creation
 		select: undefined, // called after selection
+		size: undefined, // used to resize parent wrapper (n lis)
 		wrap: false,
 		frame: true,
 		transferClasses: true,
@@ -46,7 +47,7 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 		this._mouseCaptureEvent.stopped = true;
 
 		//this._mouseCaptureEvent.slotYPos = this.slots[this._mouseCaptureEvent.currentSlot].list.css('top').replace(/px/g, '') * 1;
-		console.log('$.ui.' + this.widgetName + ' ~ ' + this.slots[i].slotYPos, [this.slots[i].middleOffset, this.slots[i].listLiHeight * j]);
+		console.log('$.ui.' + this.widgetName + ' ~ ' + this.slots[i].slotYPos, [this.slots[i].middleOffset, this.slots[i].listLiHeight, j]);
 		this.scrollTo(i, this.slots[i].middleOffset - (this.slots[i].listLiHeight * j));
 
 		// update current option
@@ -108,6 +109,10 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 			// update select val if necessary
 			if(!empty(self.slots[i].select)) {
 				self.slots[i].select.val(v);
+				// erase later slots
+				for(var j=i+1; j < count(self.slots);j++) {
+					self.slots[j].select.val('');
+				}
 			}
 
 		} else {
@@ -123,6 +128,7 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 	refreshSlot: function(i) {
 
 		var $visibleLis = this.slots[i].list.children("li:visible");
+		//console.log($visibleLis, this.slots[i].list);
 
 		$.extend(this.slots[i], {
 			listLength :  $visibleLis.length,
@@ -146,7 +152,6 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 	},
 	getCurrentOption: function(i) {
 		var c = (-Math.round((this.slots[i].slotYPos - this.slots[i].middleOffset) / this.slots[i].listLiHeight));
-		console.log(this.slots[i].slotYPos, c);
 		return (c < 0) ? 0 : (c > this.slots[i].listLength - 1) ? this.slots[i].listLength - 1 : c;
 	},
 
@@ -207,11 +212,14 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 		this.originalElement.find(o.target).each(function(i) {
 			var $this = $(this);
 
-			self.slots[i] = {list : $this};
+			self.slots[i] = {list : $this, size : undefined};
 
 			if($this.is("select")) {
 
 				$.extend(self.slots[i], {select : $this, optionData : []});
+
+				// try to get size
+				if(!o.size) o.size = $this.attr("size");
 
 				// serialize select element options
 				$this.hide().find('option')
@@ -269,6 +277,12 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 					ev.stopPropagation();
 					return true;
 			}).trigger('refresh');
+
+			// resize if size has been specified by options or from input
+			if(o.size && o.size != self.slots[i].elementHeight) {
+				self.element.css({height : self.slots[i].elementHeight});
+				$this.trigger('refresh');
+			}
 
 		});
 
