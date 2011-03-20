@@ -20,12 +20,14 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 	widgetEventPrefix: "selectwheel",
 	options: {
 		active: 'ui-state-active',
+		selected: 'ui-state-selected',
 		target: 'select, ul',
 		create: undefined, // called after creation
 		select: undefined, // called after selection
 		size: undefined, // used to resize parent wrapper (n lis)
 		wrap: false,
 		frame: true,
+		tree: false, // tree behavior
 		transferClasses: true,
 		use3d: true,
 		distance: 5, // $.ui.mouse option
@@ -109,8 +111,8 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 			// update select val if necessary
 			if(!empty(self.slots[i].select)) {
 				self.slots[i].select.val(v);
-				// erase later slots
-				for(var j=i+1; j < count(self.slots);j++) {
+				// erase later slots if tree behavior
+				if(o.tree) for(var j=i+1; j < count(self.slots);j++) {
 					self.slots[j].select.val('');
 				}
 			}
@@ -129,15 +131,19 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 		var self = this,
 			o = this.options;
 
-		var $visibleLis = this.slots[i].list.children("li:visible");
+		var $lis = this.slots[i].list.children("li").removeClass("ui-state-active"),
+			$visibleLis = $lis.filter(":visible");
 		//console.log($visibleLis, this.slots[i].list);
 
-		this.slots[i].listLiHeight =
-			this.slots[i].list.children("li:first").css('height') ? this.slots[i].list.children("li:first").css('height').replace(/px/g, '') * 1 :
-			$visibleLis.filter(":first").height() ? $visibleLis.filter(":first").height() :
-			this.slots[i].listLiHeight;
+		console.log('listLiHeight'+i, [this.slots[i].list.children("li:first").css('height'), $visibleLis.filter(":first").height(), this.slots[i].listLiHeight]);
 
-		//console.log('listLiHeight'+i, [this.slots[i].listLiHeight, this.slots[i].list.children("li:first").css('height'), $visibleLis.filter(":first").height()]);
+		this.slots[i].listLiHeight =
+			// try to get height from li's css
+			$lis.filter(":first").css('height') ? $lis.filter(":first").css('height').replace(/px/g, '') * 1 :
+			// try to calculate real height if css failed
+			$visibleLis.filter(":first").height() ? $visibleLis.filter(":first").height() :
+			// else keep current value (undefined ?)
+			this.slots[i].listLiHeight;
 
 		if(!this.slots[i].listLiHeight) console.warn('$.ui.' + self.widgetName + ' ~ ' + '!this.slots[i].listLiHeight', 'will need a new refresh');
 
@@ -146,10 +152,28 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 			listWidth : this.slots[i].list.width(),
 			listOffset : this.slots[i].list.offset(),
 			elementHeight : this.element.height(),
-			selectedLi : $visibleLis.filter(".ui-state-active").length > 0 ? $visibleLis.filter(".ui-state-active").index() : $visibleLis.filter(".ui-state-selected").length > 0 ? $visibleLis.filter(".ui-state-selected").index() : 0,
+			selectedLi :
+				// apply select's value ~ normal way to define / update selectwheel val manually (then trigger refresh)
+				(this.slots[i].select && this.slots[i].select.val()) ? $lis.filter('[data-value="' + this.slots[i].select.val() + '"]').addClass("ui-state-active").index() :
+				// use active class as a fallback (take last active)
+				$visibleLis.filter("." + o.active).length ? $visibleLis.filter("." + o.active).index() :
+				// use selected class as a fallback (when form was created)
+				$lis.filter("." + o.selected).length ? $lis.filter("." + o.selected).addClass(o.active).index() :
+				// take none/first(?) item
+				0,
 			slotYPos : 0
 		});
 
+		// handle element resize from options or select size definition... (Q: should it really override css params? seems a bit lazy)
+		if(o.size && self.slots[i].listLiHeight && o.size != self.slots[i].elementHeight / self.slots[i].listLiHeight) {
+			console.log('$.ui.' + this.widgetName + ' ~ ' + 'updating element height', [self.slots[i].elementHeight, o.size * self.slots[i].listLiHeight]);
+			// we need to refresh elementHeight (needed in middleOffset)
+			self.slots[i].elementHeight = o.size * self.slots[i].listLiHeight;
+			// update current css
+			this.element.css({height : self.slots[i].elementHeight});
+		}
+
+		// depends from other params
 		$.extend(this.slots[i], {
 			middleOffset : Math.ceil((this.slots[i].elementHeight - this.slots[i].listLiHeight)/2)
 		});
@@ -161,10 +185,13 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 		return e.currentSlot;
 	},
 	getCurrentOption: function(i) {
-		if(!this.slots[i].listLength) {
-			console.warn('$.ui.' + self.widgetName + ' ~ ' + '!this.slots[i].listLiHeight', 'last refresh failed, triggering new one');
+		// handle listLiHeight update if it failed on last refresh, we will need to refresh
+		if(!this.slots[i].listLiHeight) {
+			console.warn('$.ui.' + self.widgetName + ' ~ ' + '!this.slots[i].listLiHeight', [i, this.slots[i]]);
 			this.slots[i].list.trigger('refresh');
 		}
+		// handle visible li count update if it failed on last refresh (no need to full refresh as it is independant)
+		if(!this.slots[i].listLength) this.slots[i].listLength = this.slots[i].list.children("li:visible").length;
 		var c = (-Math.round((this.slots[i].slotYPos - this.slots[i].middleOffset) / this.slots[i].listLiHeight));
 		return (c < 0) ? 0 : (c > this.slots[i].listLength - 1) ? this.slots[i].listLength - 1 : c;
 	},
@@ -226,7 +253,7 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 		this.originalElement.find(o.target).each(function(i) {
 			var $this = $(this);
 
-			self.slots[i] = {list : $this, size : undefined};
+			self.slots[i] = {list : $this, select : false, size : undefined};
 
 			if($this.is("select")) {
 
@@ -268,24 +295,32 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 
 			}
 
-			$this.addClass(self.widgetBaseClass + '-list ui-widget ui-widget-content')
+			// init styles
+			if(o.use3d) {
+				$this.addClass(self.widgetBaseClass + '-list ui-widget ui-widget-content')
 				//.attr('data-select-name', self.slots[i].select.attr('name'))
 				.css({
 					'-webkit-transform': 'translate3d(0px, 0px, 0px)',
 					'-webkit-transition-duration': '200ms',
-					'-webkit-transition-timing-function': 'cubic-bezier(0, 0, 0.2, 1)',
+					'-webkit-transition-timing-function': 'cubic-bezier(0, 0, 0.2, 1)'
+				});
+			} else {
+				$this.addClass(self.widgetBaseClass + '-list ui-widget ui-widget-content')
+				//.attr('data-select-name', self.slots[i].select.attr('name'))
+				.css({
 					'position': 'relative',
 					'top': '0px'
 				});
+			}
 
 			// slot init/refresh
 			$this.bind('refresh' + '.' + this.widgetName, function(ev, ui) {
 					self.refreshSlot(i);
 					self.setPosition(i, self.slots[i].middleOffset - (self.slots[i].listLiHeight * self.slots[i].selectedLi)); // set position to selectedLi adjusted to be on the middle.
 
-					// update select val if necessary
+					// update select val if necessary ~ why ???
 					if(!empty(self.slots[i].select)) {
-						self.slots[i].select.val('');
+						//self.slots[i].select.val('');
 					}
 
 					console.log('$.ui.' + self.widgetName + ' ~ ' + 'refresh()', [i, self.slots[i]]);
@@ -309,11 +344,11 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 		});
 
 		// resize if size has been specified by options or from input
-		if(o.size && self.slots[0].listLiHeight && o.size != self.slots[0].elementHeight / self.slots[0].listLiHeight) {
+		/*if(o.size && self.slots[0].listLiHeight && o.size != self.slots[0].elementHeight / self.slots[0].listLiHeight) {
 			this.element.css({height : o.size * self.slots[0].listLiHeight});
 			console.log('$.ui.' + this.widgetName + ' ~ ' + 'updating size', o.size * self.slots[0].listLiHeight);
 			this.element.trigger('refresh');
-		}
+		}*/
 
 		// insert frame
 		if (o.frame) this.frame = $('<div>').addClass(self.widgetBaseClass + '-frame').appendTo(this.element);
