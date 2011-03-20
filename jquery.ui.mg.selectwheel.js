@@ -27,40 +27,13 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 		size: undefined, // used to resize parent wrapper (n lis)
 		wrap: false,
 		frame: true,
+		auto: true, // auto select after drag
 		tree: false, // tree behavior
 		transferClasses: true,
 		use3d: true,
 		distance: 5, // $.ui.mouse option
 		delay: 5, // $.ui.mouse option
 		debug: false
-	},
-	_mouseStart: function(e) {
-		//console.log('$.ui.' + self.widgetName + ' ~ ' + '_mouseStart()', e);
-	},
-	_mouseDrag: function(e) {
-		//console.log('$.ui.' + self.widgetName + ' ~ ' + '_mouseDrag()', e);
-		this.scrollTo(this._mouseCaptureEvent.currentSlot, this._mouseCaptureEvent.slotYPos + (e.pageY - this._mouseDownEvent.pageY));
-	},
-	_mouseStop: function(e) {
-		console.log('$.ui.' + this.widgetName + ' ~ ' + '_mouseStop()', e);
-		var i = this._mouseCaptureEvent.currentSlot, // currentSlot
-			j = this.getCurrentOption(i), // currentOption
-			o = this.options;
-		this._mouseCaptureEvent.stopped = true;
-
-		//this._mouseCaptureEvent.slotYPos = this.slots[this._mouseCaptureEvent.currentSlot].list.css('top').replace(/px/g, '') * 1;
-		console.log('$.ui.' + this.widgetName + ' ~ ' + this.slots[i].slotYPos, [this.slots[i].middleOffset, this.slots[i].listLiHeight, j]);
-		this.scrollTo(i, this.slots[i].middleOffset - (this.slots[i].listLiHeight * j));
-
-		// update current option
-		this._mouseCaptureEvent.currentOption = j;
-
-
-
-		// SHOULD TRIGGER SOME EVENT ~ to select on drag
-
-		// toggle input select ~ to retreive selected value
-		//this.slots[i].select.val(j);
 	},
 	_mouseCapture: function(e) {
 		console.log('$.ui.' + this.widgetName + ' ~ ' + '_mouseCapture', e);
@@ -80,53 +53,125 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 		e.stopPropagation();
 		return true;
 	},
+	_mouseStart: function(e) {
+		//console.log('$.ui.' + self.widgetName + ' ~ ' + '_mouseStart()', e);
+	},
+	_mouseDrag: function(e) {
+		//console.log('$.ui.' + self.widgetName + ' ~ ' + '_mouseDrag()', e);
+		this.scrollTo(this._mouseCaptureEvent.currentSlot, this._mouseCaptureEvent.slotYPos + (e.pageY - this._mouseDownEvent.pageY));
+	},
+	_mouseStop: function(e, ui) {
+		var self = this,
+			o = self.options,
+			i = self._mouseCaptureEvent.currentSlot, // currentSlot
+			j = self.getCurrentOption(i); // currentOption
+
+		console.log('$.ui.' + this.widgetName + ' ~ ' + '_mouseStop()', [e, ui, i, j]);
+
+		// save stopped status for later use
+		this._mouseCaptureEvent.stopped = true;
+		// save current option for later use (used when val update was in mouseclick)
+		this._mouseCaptureEvent.currentOption = j;
+
+		console.log('$.ui.' + this.widgetName + ' ~ ' + this.slots[i].slotYPos, [this.slots[i].middleOffset, this.slots[i].listLiHeight, j]);
+
+		// scroll to currentOption
+		if(empty(ui) || empty(ui.click)) self.scrollTo(i, self.slots[i].middleOffset - (self.slots[i].listLiHeight * j));
+
+		// update slotValue if it was a click or if autoselect mode is on
+		if((!empty(ui) && !empty(ui.click)) || o.auto) {
+			self.setSlotValue(i, j);
+		}
+
+	},
 	_mouseClick: function(e) {
 		var self = $.data(this, "selectwheel"),
-			o = self.options;
+			o = self.options,
+			i = self._mouseCaptureEvent.currentSlot, // currentSlot
+			j = self.getCurrentOption(i, e.offsetY - self.slots[i].elementHeight/2);
 
 		console.log('$.ui.' + self.widgetName + ' ~ ' + '_mouseClick', e);
-		var $t = $(e.target);
 
 		if(!self._mouseCaptureEvent.stopped) {
 			// was a click
 
-			// scrollTo position
-			self.scrollTo(self._mouseCaptureEvent.currentSlot,
-				self._mouseCaptureEvent.slotYPos + (self.slots[self._mouseCaptureEvent.currentSlot].elementHeight/2 - e.offsetY)
-			);
+			// scrollTo clicked position
+			self.scrollTo(i, self.slots[i].middleOffset - (self.slots[i].listLiHeight * j));
 
 			// trigger stop event
-			self._mouseStop(self._mouseCaptureEvent);
-
-			var i = self._mouseCaptureEvent.currentSlot, // currentSlot
-				j = self._mouseCaptureEvent.currentOption; // currentOption
-
-			// toggle active class on selected li ~ to style selected content
-			var v = self.slots[i].list.children("li")
-				.filter('.' + o.active).removeClass(o.active).end()
-				.filter(":visible").eq(j).addClass(o.active)
-				.trigger('select' + '.' + this.widgetName, {currentSlot : i, currentOption : j})
-				.data('value');
-
-			// update select val if necessary
-			if(!empty(self.slots[i].select)) {
-				self.slots[i].select.val(v);
-				// erase later slots if tree behavior
-				if(o.tree) for(var j=i+1; j < count(self.slots);j++) {
-					self.slots[j].select.val('');
-				}
-			}
+			self._mouseStop(self._mouseCaptureEvent, {click: true});
 
 		} else {
 			// was a drag
-			//console.log('drag');
-
-			// misses mouseup outside element !
 		}
 
 		e.preventDefault();
 		e.stopPropagation();
 	},
+
+	getCurrentSlot: function(e) {
+		$.each(this.slots, function(i) {
+			if(e.pageX - this.list.offset().left > 0) e.currentSlot = i * 1;
+		});
+		return e.currentSlot;
+	},
+	getCurrentOption: function(i, delta) {
+		delta = typeof(delta) != 'undefined' ? delta : 0;
+
+		// handle listLiHeight update if it failed on last refresh, we will need to refresh
+		if(!this.slots[i].listLiHeight) {
+			console.warn('$.ui.' + self.widgetName + ' ~ ' + '!this.slots[i].listLiHeight', [i, this.slots[i]]);
+			this.slots[i].list.trigger('refresh');
+		}
+		// handle visible li count update if it failed on last refresh (no need to full refresh as it is independant)
+		if(!this.slots[i].listLength) this.slots[i].listLength = this.slots[i].list.children("li:visible").length;
+		// calculate currentSlot
+		var c = - Math.round((this.slots[i].slotYPos - this.slots[i].middleOffset - delta) / this.slots[i].listLiHeight);
+		return (c < 0) ? 0 : (c > this.slots[i].listLength - 1) ? this.slots[i].listLength - 1 : c;
+	},
+
+	scrollTo: function (slot, destY, tempo) {
+		//console.log('$.ui.' + self.widgetName + ' ~ ' + 'scrollTo', [slot, destY, tempo]);
+		this.setPosition(slot, destY ? destY : 0, tempo);
+	},
+	setPosition: function (slot, destY, tempo) {
+		//console.log('$.ui.' + self.widgetName + ' ~ ' + 'setPosition', [slot, destY, tempo]);
+
+		// what is this for ?? update pos for ?
+		this.slots[slot].slotYPos = destY;
+
+		//transition 1 ~ pur wT
+		if(this.options.use3d) {
+			//if(tempo) this.slots[slot].list.css('-webkit-transition-duration', tempo);
+			//this.slots[slot].list.css('-webkit-transform', 'translate3d(0, ' + destY + 'px, 0)'); ~ jquery hook ? must run a jsperf on this.
+			this.slots[slot].list.get(0).style.webkitTransform = 'translate3d(0, ' + destY + 'px, 0)';
+			// useless here but maybe somewhere
+			//this.slots[slot].list.unbind('webkitTransitionEnd').bind('webkitTransitionEnd', function(e) { console.log('!!!'); });
+		} else {
+			this.slots[slot].list.get(0).style.top = destY + 'px';
+		}
+	},
+	setSlotValue: function (i, j) {
+		var self = this,
+			o = this.options;
+
+		// toggle active class on selected li ~ to style selected content
+		var v = self.slots[i].list.children("li")
+			.filter('.' + o.active).removeClass(o.active).end()
+			.filter(":visible").eq(j).addClass(o.active)
+			.trigger('select' + '.' + this.widgetName, {currentSlot : i, currentOption : j})
+			.data('value');
+
+		// update select val if necessary
+		if(!empty(self.slots[i].select)) {
+			self.slots[i].select.val(v);
+			// erase later slots if tree behavior
+			if(o.tree) for(var k=i+1; k < count(self.slots);k++) {
+				self.slots[k].select.val('');
+			}
+		}
+	},
+
 	refreshSlot: function(i) {
 		var self = this,
 			o = this.options;
@@ -178,48 +223,6 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 			middleOffset : Math.ceil((this.slots[i].elementHeight - this.slots[i].listLiHeight)/2)
 		});
 	},
-	getCurrentSlot: function(e) {
-		$.each(this.slots, function(i) {
-			if(e.pageX - this.list.offset().left > 0) e.currentSlot = i * 1;
-		});
-		return e.currentSlot;
-	},
-	getCurrentOption: function(i) {
-		// handle listLiHeight update if it failed on last refresh, we will need to refresh
-		if(!this.slots[i].listLiHeight) {
-			console.warn('$.ui.' + self.widgetName + ' ~ ' + '!this.slots[i].listLiHeight', [i, this.slots[i]]);
-			this.slots[i].list.trigger('refresh');
-		}
-		// handle visible li count update if it failed on last refresh (no need to full refresh as it is independant)
-		if(!this.slots[i].listLength) this.slots[i].listLength = this.slots[i].list.children("li:visible").length;
-		var c = (-Math.round((this.slots[i].slotYPos - this.slots[i].middleOffset) / this.slots[i].listLiHeight));
-		return (c < 0) ? 0 : (c > this.slots[i].listLength - 1) ? this.slots[i].listLength - 1 : c;
-	},
-
-	scrollTo: function (slot, destY, tempo) {
-		//console.log('scrollTo', [slot, destY, tempo]);
-		this.setPosition(slot, destY ? destY : 0, tempo);
-	},
-	setPosition: function (slot, destY, tempo) {
-
-		//console.log('setPosition', [slot, destY, tempo]);
-
-		// what is this for ?? update pos for ?
-		this.slots[slot].slotYPos = destY;
-
-		//transition 1 ~ pur wT
-		if(this.options.use3d) {
-			//if(tempo) this.slots[slot].list.css('-webkit-transition-duration', tempo);
-			//this.slots[slot].list.css('-webkit-transform', 'translate3d(0, ' + destY + 'px, 0)'); ~ jquery hook ? must run a jsperf on this.
-			this.slots[slot].list.get(0).style.webkitTransform = 'translate3d(0, ' + destY + 'px, 0)';
-			// useless here but maybe somewhere
-			//this.slots[slot].list.unbind('webkitTransitionEnd').bind('webkitTransitionEnd', function(e) { console.log('!!!'); });
-		} else {
-			this.slots[slot].list.get(0).style.top = destY + 'px';
-		}
-
-	},
-
 
 	_create: function(a, b, c) {
 		this._selectwheel(true);
