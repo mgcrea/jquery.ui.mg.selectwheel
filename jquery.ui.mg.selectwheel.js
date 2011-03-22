@@ -45,7 +45,7 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 
 		e.deltaY = 0;
 		if(o.use3d) e.slotYPos = splitCssMatrix(this.slots[e.currentSlot].list.css('-webkit-transform'), 6) * 1;
-		else this.slots[e.currentSlot].list.css('top').replace(/px/g, '') * 1;
+		else e.slotYPos = this.slots[e.currentSlot].list.css('top').replace(/px/g, '') * 1;
 
 		this._mouseCaptureEvent = e;
 
@@ -181,7 +181,7 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 			$visibleLis = $lis.filter(":visible");
 		//console.log($visibleLis, this.slots[i].list);
 
-		console.log('listLiHeight'+i, [this.slots[i].list.children("li:first").css('height'), $visibleLis.filter(":first").height(), this.slots[i].listLiHeight]);
+		//console.log('listLiHeight'+i, [this.slots[i].list.children("li:first").css('height'), $visibleLis.filter(":first").height(), this.slots[i].listLiHeight]);
 
 		this.slots[i].listLiHeight =
 			// try to get height from li's css
@@ -223,6 +223,8 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 		$.extend(this.slots[i], {
 			middleOffset : Math.ceil((this.slots[i].elementHeight - this.slots[i].listLiHeight)/2)
 		});
+
+		console.log('$.ui.' + this.widgetName + ' ~ ' + 'refreshSlot()', [i, this.slots[i]]);
 	},
 
 	_create: function(a, b, c) {
@@ -306,7 +308,8 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 				.css({
 					'-webkit-transform': 'translate3d(0px, 0px, 0px)',
 					'-webkit-transition-duration': '200ms',
-					'-webkit-transition-timing-function': 'cubic-bezier(0, 0, 0.2, 1)'
+					'-webkit-transition-timing-function': 'cubic-bezier(0, 0, 0.2, 1)',
+					'top': '0px !important'
 				});
 			} else {
 				$this.addClass(self.widgetBaseClass + '-list ui-widget ui-widget-content')
@@ -320,7 +323,8 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 			// slot init/refresh
 			$this.bind('refresh' + '.' + this.widgetName, function(ev, ui) {
 					self.refreshSlot(i);
-					self.setPosition(i, self.slots[i].middleOffset - (self.slots[i].listLiHeight * self.slots[i].selectedLi)); // set position to selectedLi adjusted to be on the middle.
+					//console.log(self.slots[i].selectedLi, self.slots[i].list.css('top').replace(/px/g, '') * 1);
+					self.setPosition(i, -(self.slots[i].listLiHeight * self.slots[i].selectedLi - self.slots[i].middleOffset)); // set position to selectedLi adjusted to be on the middle.
 
 					// update select val if necessary ~ why ???
 					if(!empty(self.slots[i].select)) {
