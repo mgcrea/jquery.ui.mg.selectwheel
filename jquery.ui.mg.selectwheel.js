@@ -111,6 +111,7 @@ $.widget("ui.selectwheel", $.ui.mouse, {
 
 	getCurrentSlot: function(e) {
 		$.each(this.slots, function(i) {
+			//this.list.is(":visible") what for ??
 			if(e.pageX - this.list.offset().left > 0) e.currentSlot = i * 1;
 		});
 		return e.currentSlot;
